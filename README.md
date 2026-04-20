@@ -1,46 +1,36 @@
 # course-deck
 
-> Turn Markdown lecture notes into a single-file HTML slide deck — Keynote-style, interview-driven, no surprises.
+> Turn Markdown lecture notes into a single-file HTML slide deck — on-brand AI Spark, Keynote-restrained, ready to project.
 
-A [Claude Code Skill](https://docs.claude.com/en/docs/claude-code/skills) that converts a Markdown lecture outline (with sections, timings, and "what to say" notes) into a single `.html` file you can actually project and present from — with navigation, step reveals, speaker notes, a time bar, and keyboard shortcuts.
+A [Claude Code Skill](https://docs.claude.com/en/docs/claude-code/skills) that converts a Markdown source (lecture / tutorial / tech talk / internal doc) into a single `.html` file you can actually project and present from — with navigation, step reveals, speaker notes, a time bar, and keyboard shortcuts.
 
-Built for 2–3 hour single-presenter lectures, bootcamps, and internal deep-dive sessions.
-
-Shipped with the **AI Spark** brand baked in on purpose — if you're on the AI Spark team (or want that exact look), you can run the skill and get on-brand decks without touching design. See [Brand: AI Spark](#brand-ai-spark) below.
+Built for 2–3 hour single-presenter lectures, bootcamps, and internal deep-dive sessions, with the **AI Spark** brand identity baked in.
 
 ## What you get
 
 - **One file, no build step** — pure HTML + CSS + JS, double-click to open
 - **Presenter-ready** — arrow keys / space to advance, `N` for speaker notes, time bar across the bottom
-- **Restrained by default** — white background, brand accent ≤10%, Apple-Keynote-style fade-and-rise animations (no bouncing, no spinning)
-- **Deterministic flow** — a 12-question interview locks design decisions before any HTML is written, so you don't get surprise typography
-- **4 rounds of playground** — cover, divider, content, components each rendered as side-by-side candidates you pick from, so the final deck matches your taste
+- **On-brand** — white background, AI Spark blue accent, flame logo, system fonts; no framework, no external fonts
+- **Restrained animations** — Apple-Keynote-style fade-and-rise, 0.85s ease; no bounce or spin
+- **Layout at the model's discretion** — per-page layout chosen from the content, not a fixed template
 
 ## Brand: AI Spark
 
-This skill ships with the **AI Spark** brand identity as its default — not a placeholder. Templates, the final deck example, and every playground seed all reference it.
+The skill is built around AI Spark's identity — it's the brand the final deck ships with.
 
 | Asset | Value |
 |---|---|
 | Name | AI Spark |
 | Primary color | `#1E40FF` (CSS variable `--brand`) |
 | Slogan | 始于火花 · 成于实战 |
-| Logo | 火苗 (flame) SVG, defined once as `<symbol id="logo-flame">` and reused across cover / divider / chrome |
-
-If you're running a course under the AI Spark banner, just run the skill — the interview's brand question defaults to "keep AI Spark" and you'll get on-brand decks with no extra input.
-
-**Want a different brand?** The interview lets you override logo, color, and slogan at the start. Once locked, every playground round and the final deck use your replacements instead. The defaults only matter when you don't specify anything.
+| Logo | 火苗 (flame) SVG, defined once as `<symbol id="logo-flame">` |
 
 ## How it works
 
-The skill enforces a strict four-phase workflow:
-
-1. **Interview** — 12 decisions across 3 groups (structure, components, presenter aids)
-2. **Brand lock** — default AI Spark identity or swap in your own logo / hex / slogan
-3. **Playground ×4** — `01-cover`, `02-divider`, `03-content-pages`, `04-components`, each as a side-by-side candidate page
-4. **Assembly** — read the Markdown, generate one divider + N content pages per section, drop into the proven deck shell
-
-Typical outcome: 9-section lecture → ~36 slides in ~30 minutes of interaction.
+1. **Parse** — read the Markdown, normalize into sections / timings / speaker notes via `references/source-schema.md`. Missing fields degrade gracefully (no speaker notes → hide that panel; no timings → hide the time bar).
+2. **Skeleton** — load `assets/final-deck-example.html` as the technical donor: CSS tokens, JS controller, deck chrome, flame logo, speaker notes panel, time bar, keyboard bindings — reused verbatim.
+3. **Assemble** — generate one divider + N content slides per section. Per-slide layout is chosen by the model from the section's content, subject to 4 visual guardrails (see `SKILL.md`).
+4. **Output** — write `<source>-PPT.html` alongside the source; open in browser for review.
 
 ## Install
 
@@ -82,39 +72,36 @@ rm ~/.codex/skills/course-deck    # Codex
 
 ```
 course-deck/
-├── SKILL.md                       ← skill definition loaded by Claude Code
+├── SKILL.md                       ← skill definition loaded by Claude Code / Codex
 ├── references/
-│   ├── design-system.md           ← colors, animation, units, key techniques
-│   ├── interview-script.md        ← 12-question interview with recommended answers
-│   ├── slide-templates.md         ← HTML skeletons for 6 slide types
-│   └── components.md              ← HTML for tree / flow / compare / code components
+│   ├── source-schema.md           ← Markdown → structured schema rules + graceful degradation
+│   └── design-system.md           ← brand assets + 3 key technical techniques
 └── assets/
-    ├── playground-templates/      ← seed files for each of the 4 playground rounds
-    └── final-deck-example.html    ← reference final deck (AI Spark 04)
+    └── final-deck-example.html    ← technical donor + on-brand reference deck (AI Spark 04)
 ```
 
 ## Input format
 
 Your Markdown should include:
 
-- Section markers (`## §1 Intro` or `## 一、引入`)
-- Per-section timing (`· 5min`)
-- Presenter-side content (`讲解策略：…` or `跟学员说：…`)
-- Bullets, tables, or flow diagrams inside each section
+- Section markers (any of `## §1 Intro` / `## 一、引入` / plain `## Intro` all work)
+- Optional per-section timing (`· 5min`) — shows up as a pill and wires the time bar
+- Optional presenter-side content (`讲解策略：…` / `跟学员说：…`) — shows up in the speaker notes panel
+- Bullets, tables, code blocks, or flow diagrams inside each section
 
-The clearer the structure, the less back-and-forth during interview.
+Fields are detected semantically — no fixed template. Missing any of the optional fields just disables the matching UI (not a hard error).
 
 ## Design constraints (non-negotiable)
 
 | Aspect | Rule |
 |---|---|
-| Palette | White background + brand color as ≤10% accent |
+| Palette | White background + brand color as ≤10% accent; exceptions: break slide `--brand-faint`, code block `#1a1d24` |
 | Animation | Fade + slight rise, 0.85s ease. No bounce, spin, or large translation |
 | Fonts | System stack (PingFang SC / Hiragino / Microsoft YaHei). No web fonts |
 | Framework | None — no reveal.js, no Slidev, no Tailwind CDN |
 | Sizing | Everything in `cqw` (container query units) so text scales with slide |
 
-Rationale: the lecture experience should feel calm and native. No cognitive tax on the audience trying to parse a busy color palette.
+Rationale: the lecture experience should feel calm and native. No cognitive tax on the audience parsing a busy color palette.
 
 ## License
 
