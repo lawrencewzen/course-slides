@@ -44,23 +44,39 @@ Typical outcome: 9-section lecture → ~36 slides in ~30 minutes of interaction.
 
 ## Install
 
+Works with both **Claude Code** and **OpenAI Codex CLI** — they use the same `SKILL.md` format.
+
 ```bash
 git clone https://github.com/lawrencewzen/course-deck.git
 cd course-deck
 ./install.sh
 ```
 
-The script symlinks this repo into `~/.claude/skills/course-deck/`. If that path already exists as a real directory, it gets moved to a timestamped backup. If it's an old symlink, you'll be asked before it's replaced.
+By default the script auto-detects which agents you have installed (`~/.claude/` and/or `~/.codex/`) and symlinks this repo into the matching skills directory:
 
-Restart Claude Code (or start a new session) to pick up the skill. Then, in any project with a Markdown lecture, say *"把这份讲义做成 PPT"* — the skill triggers automatically.
+- `~/.claude/skills/course-deck/` — for Claude Code
+- `~/.codex/skills/course-deck/` — for Codex CLI
+
+Flags if you want one side only:
+
+```bash
+./install.sh --claude     # Claude Code only
+./install.sh --codex      # Codex only
+./install.sh --both       # force both (creates parent dir if missing)
+```
+
+If the target path already exists as a real directory, it's moved to a timestamped backup. If it's an old symlink, you'll be asked before it's replaced.
+
+Restart your agent (or start a new session) to pick up the skill. Then, in any project with a Markdown lecture, say *"把这份讲义做成 PPT"* — the skill triggers automatically.
 
 ### Uninstall
 
 ```bash
-rm ~/.claude/skills/course-deck
+rm ~/.claude/skills/course-deck   # Claude Code
+rm ~/.codex/skills/course-deck    # Codex
 ```
 
-(It's a symlink — removing it doesn't delete the repo.)
+(Both are symlinks — removing them doesn't delete the repo.)
 
 ## What's in here
 

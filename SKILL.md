@@ -37,7 +37,9 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
 
 ## 工作流（严格四阶段，不能跳）
 
-### 阶段 1 · 采访（约 4 个 AskUserQuestion 调用）
+### 阶段 1 · 采访（约 4 组结构化提问）
+
+> 用你 agent 自带的结构化提问工具：Claude Code 是 `AskUserQuestion`，Codex 是 `ask_user_question`；都没有就用自然语言一组一组问。
 
 目的：在动手前锁定 12 项决策，避免后期返工。**即使用户说"你定就行"，也要走完采访**——因为后面 4 轮 playground 都基于这些决策。
 
@@ -47,7 +49,7 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
 第二组（关键组件样式 4 问）：目录树 / 流程图 / 对比叙事 / 代码块
 第三组（演讲辅助 4 问）：演讲者备注 / 时间条 / 导航 / 交付形式
 
-如果用户提供了**视觉品牌资产**（logo / 主色 / slogan），先看图分析（用 Read 工具读图），然后提一个"风格冲突仲裁问题"——因为高饱和品牌色和"克制 Keynote 风"通常打架，要让用户明确选边。
+如果用户提供了**视觉品牌资产**（logo / 主色 / slogan），先读图分析，然后提一个"风格冲突仲裁问题"——因为高饱和品牌色和"克制 Keynote 风"通常打架，要让用户明确选边。
 
 ### 阶段 2 · 品牌锁定
 
@@ -80,7 +82,7 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
 **直接复制 `assets/playground-templates/` 下的对应文件作为起点**，然后：
 1. 替换品牌（如果用户用了自定义品牌）
 2. 替换示例内容为本讲义里的真实内容（用 §X 节、真实文件名、真实流程）
-3. 用 `Bash open <path>` 让浏览器自动打开
+3. 用浏览器打开（macOS 可用 `open <path>`；没有桌面环境就把路径给用户让其自行打开）
 
 **每轮等用户反馈再继续**：
 - 通过 → 进下一轮
@@ -97,7 +99,7 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
 3. 按 `references/slide-templates.md` 里的对应模板生成每页 HTML
 4. 按 `references/components.md` 里的对应组件生成目录树 / 流程图 / 对比 / 代码块 slide
 5. 把所有 slide 装进 deck，**保留 example 里的 deck-chrome、speaker-notes、hotkey-help、JS 不变**
-6. `Bash open` 打开供用户验收
+6. 用浏览器打开供用户验收
 
 **slide 顺序约定**（基于讲义 9 节 + 2 休息）：
 1. Cover
@@ -136,7 +138,7 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
 装配完成后，任何 slide 样式调整（配色、布局、组件、动画）都**不允许直接改 `<lecture-name>-PPT.html`**：
 
 1. 在 `playground/` 下新建一个对照 html（命名如 `05-tweak-<描述>.html`），把要改的 slide 单独拎出来做新旧两版
-2. `Bash open` 让浏览器打开，截图给用户看 before/after
+2. 用浏览器打开，截图给用户看 before/after
 3. 用户点头后，再把通过的版本落到正式 deck
 
 **Why**：正式 deck 里 slide 共享 CSS tokens、JS controller、动画时序，直接改容易污染其他页或打断翻页；playground 的对照视图也让用户一眼看出差别，省得口头描述拉扯。
@@ -166,17 +168,17 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
 用户：把 course/xxx/讲义.md 做成 PPT
 
 你：好，开始采访。先问 4 个基础问题。
-   [AskUserQuestion: 框架/比例/动画/步进]
+   [结构化提问: 框架/比例/动画/步进]
 
 用户：[全推荐]
 
 你：第二组，关键组件样式。
-   [AskUserQuestion: 目录树/流程图/对比/代码块]
+   [结构化提问: 目录树/流程图/对比/代码块]
 
 用户：[全推荐]
 
 你：第三组，演讲辅助。
-   [AskUserQuestion: 备注/时间条/导航/交付]
+   [结构化提问: 备注/时间条/导航/交付]
 
 用户：[全推荐]
 
@@ -188,7 +190,7 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
 你：好，开始 Playground 01 封面页。
    [复制 assets/playground-templates/01-cover.html → playground/01-cover.html]
    [替换示例文案为本讲义内容]
-   [Bash open]
+   [用浏览器打开]
    3 版封面已开。选哪一版？
 
 用户：A
@@ -203,7 +205,7 @@ description: 把 Markdown 课堂讲义（带节分、时长、节奏要点、讲
    [读 final-deck-example.html 作为骨架]
    [按讲义 9 节生成 ~36 页 slide]
    [写入 <lecture-name>-PPT.html]
-   [Bash open]
+   [用浏览器打开]
    PPT 已开，按 → / 空格翻页，N 看演讲者备注。
 
 用户：[验收]
