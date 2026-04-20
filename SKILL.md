@@ -57,6 +57,25 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
    > 解析完毕 · 共 7 节 · tutorial 模式（无讲师备注、无时间条、无休息页）· 预计 22 页
 4. 如果是 **doc** 类型（无章节层级） → 停下，请用户先加 `##` 章节再来
 5. 如果 `title` 缺失且无法从文件名推 → 问用户一句
+6. 进入 **tutorial / doc** 模式（讲师字段缺）时，走下面的"结构化补问"一次问齐关键信息
+
+### 结构化补问（tutorial / doc 模式必跑；lecture 模式跳过）
+
+讲师字段不能瞎编，但有几项影响节奏 / 排版的信息可以直接问用户。**一次性把下面清单问完，不要逐条追问**；用户答什么就填什么，不答就按降级走。
+
+清单（固定 3 项，可追加 1 项自定义）：
+
+1. **课程总时长**（`duration_total` 缺时问）—— 自由输入 "45 分钟" / "一个半小时" / "不定 / 自己看"
+2. **听众水平**（始终问）—— 三选一：零基础 / 有相关经验 / 进阶
+3. **展示场景**（始终问）—— 三选一：线下上课 / 线上直播 / 自学翻阅
+4. （可选）其他想让装配知道的事 —— 自由输入
+
+**问法不绑具体 agent UI**：Claude Code 可以用 AskUserQuestion 一次问多题；其他 agent 没这种能力就用 markdown 编号清单单条消息问，让用户一条消息里答全。**核心是"一批问一批答"，不是"一问一答一问一答"**。
+
+**答案怎么用**：
+- `duration_total` → 填进 schema，决定要不要出时间条
+- 听众水平 → 影响每页信息密度（零基础偏少、进阶可密）和要不要多给图示
+- 展示场景 → 线上直播偏大字号 + 弱动画，自学翻阅可以信息密度更高、少步进 reveal
 
 ### 缺失字段绝不自动补
 
@@ -112,13 +131,88 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 | cover | 1 主标题 + 1 副标题 + 可选 1 行 meta（讲师 / 日期 / 时长）；首页 logo + "AI Spark" 品牌名必须有 |
 | divider | eyebrow §N + 1 h1（节标题，≤18 字）+ 可选 ⏱ pill + 可选 bridge 承上启下 1-2 句 |
 | body | eyebrow + 1 h1 + **2-6 段正文**（每段 ≤3 句，~60 字）+ 可选 quote ≤2 行 + **出处署名**；段数按内容自由选，5-6 段时字号会自然收小，需目测不溢出 |
-| points | **3-6 条**并列要点；每条 1 序号 + 短标题（2-8 字）+ 描述 1-2 行（~30 字） |
+| points | **3-5 条**并列要点（4 条最舒服，5 条已经偏紧，6+ 必拆）；每条 1 序号 + 短标题（2-8 字）+ 描述 1-2 行（~30 字） |
 | flow | **3-5 个主节点** + 可选 1-2 个 `.future` 虚框；每节点 `.name` 2-4 字 + `.desc` ≤1 行（可 mono 路径） |
 | table | **2-4 列 × 3-6 行**（含 thead）；单元格文本 ≤ 20 字；7+ 行先考虑删列 / 拆页 / 降字号 |
 | break | 1 大 icon（☕ / 🚶）+ 1 句标语 + ⏱ 时长 pill；浅底 `--brand-faint` |
 | 代码块（嵌在 body 内） | ≤ 10 行；单行 ≤ 60 字符；深色窗 `#1a1d24` |
 
-拆页惯例：body 超长拆 "X（1/2）" / "X（2/2）"；points 7+ 条拆 "前三条 / 后三条"；table 7+ 行先删列再拆行。
+拆页惯例：body 超长拆 "X（1/2）" / "X（2/2）"；points 6+ 条拆页，eyebrow + h1 原样复用，只把要点列表切成 3+3 / 3+4 / 4+4 等（每页 3-4 条最稳），标题后缀"（1/2）"；table 7+ 行先删列再拆行。
+
+## 超量时：C 拆页（默认）vs A 定容轮播（opt-in）
+
+内容超过单页上限时，不要靠压 padding / 压字号硬塞——会一路压到难看。有两条正经出路：
+
+### C · 拆页（**默认**）
+
+按上面"拆页惯例"写。eyebrow / h1 复用、h1 后缀 "（1/2）"、`data-section` 和 `data-time` 相同——面包屑 / 计时器跨两页连续。
+
+**什么时候走 C**：
+- 内容可以"前半 / 后半"独立讲（演示步骤、作业清单、参考表）
+- 学员可能想回看 / 截屏（两页都留在 deck 历史里方便翻）
+- 页数预算宽松
+
+### A · 定容轮播（opt-in · 一页之内换窗口）
+
+`skeleton.html` 的 controller 原生支持。语义："框架不动、内容换"——按 → 把当前一屏 K 条淡出上滑，下一屏 K 条在同位置淡入。
+
+**DOM 约定**：
+
+```html
+<div class="items windowed" data-window="4">
+  <div class="step" data-step="1">…</div>
+  …
+  <div class="step" data-step="6">…</div>
+</div>
+```
+
+- `.windowed` 标记容器；`data-window="K"` 每屏显示 K 条
+- N 个 `.step`（1-indexed `data-step`）→ 自动算 `⌈N/K⌉` 屏
+- 进入 slide 时第一屏自动显示（stage=1），不用按一下
+- controller 自动在容器底部生成 pager（"1–4 / 6"）
+- 容器高度锁到首屏实际高度，末屏稀疏时不塌陷
+- `.stepped`（累积揭示，如"三条规则"）和 `.windowed`（定容轮播）互斥，按需二选一
+
+**什么时候走 A**：
+- 语义上不可拆（如"三条规则"要并排对比；节奏上要"一页讲完"）
+- 条数临时超量但整组是同一抽象层级
+- 页数预算吃紧，不想再加页
+
+**什么时候不走 A**：
+- 学员需要**对照着做**（§8 六步流程这种手把手清单）——全可见 > 节奏好
+- 参考表 / 目录结构（学员要截屏）——拆页比轮播友好
+
+### 装配后必跑：静态 lint（闭环）
+
+**装配完不算完**。跑一遍 linter，收敛到 0 告警才算交付：
+
+```bash
+python3 assets/lint.py <source>-PPT.html
+```
+
+linter 按结构阈值扫所有 slide，抓 `.points / .demo-steps / tbody / .body / .flow-row` 的超量，每条告警给出"slide N · §N · 容器 · 实际/阈值 · 建议"。`data-window` 已开的容器自动跳过（不误报 A 用户）。
+
+**工作流**：
+
+```
+assemble  →  lint
+           ├─ 0 告警 → 交付
+           └─ 有告警 → 就地改（C 拆 or A 开 data-window）→ lint → …
+```
+
+**豁免**（per-slide opt-out）：某页确实放得下（如 compact padding / 字号特调），在该 `.slide` 上加 `data-lint-skip="<kind>[,<kind>]"`，值从下面这列拿：`points_single` / `points_two` / `points_cmp` / `demo_steps` / `table_rows` / `body_paras` / `flow_nodes`。
+
+**别滥用豁免**。豁免 = "我肉眼验过了真的放得下"。新加内容（多了一行 / 长了一句）要重新验证。
+
+### 运行时二道关：controller 溢出 warning
+
+linter 只抓结构超量，抓不到像素级（标题换行撑破版 / 长 cell 撑宽）。controller 进入每页时补一道检测：`.body / .items / .demo-steps / .flow / table / .ascii-box / .quote` 跨过 slogan 安全线（deck 底 - 3.5cqw）就往浏览器 console 打：
+
+```
+⚠ slide 12 溢出 slogan 安全线 · 超出 1.8cqw · 最差元素: div.demo-steps · 建议走 C 拆页或 A 轮播
+```
+
+lint 干净后再开浏览器过一遍 console，双保险。
 
 ## 后续改动走 tweak 对照
 
@@ -137,10 +231,11 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 - 不要在内容页用整页深色底（只有代码块组件用 `#1a1d24`）
 - 不要加装饰 emoji（除休息页 ☕ 🚶 和状态 icon ⚠️ 📄 这种功能性）
 - 不要重写 deck chrome / JS controller / 动画 primitive —— 直接复用 `skeleton.html` 里的，那是验证过能用的
-- 不要在每页 slide 里手写底部 slogan 条或背景水印 —— skeleton 的 `.deck-bottom`（品牌蓝 "AI Spark · 始于火花 成于实战"）和 `.slide::before`（flame + AI Spark 黑剪影水印，opacity 0.015）是 deck 级全局 chrome / bg，cover 页由 controller 自动隐藏 slogan 条（cover 自己 footer 有 slogan 位）
+- 不要在每页 slide 里手写底部 slogan 条或背景水印 —— skeleton 的 `.deck-bottom`（品牌蓝 "AI Spark · 始于火花 成于实战"）和 `.slide::before`（flame + AI Spark 黑剪影水印，opacity 0.015）是 deck 级全局 chrome / bg，cover + end 页由 controller 自动隐藏底部 slogan 条（cover footer 自带 slogan 位；end 页自带收尾 slogan，避免与全局条重复）。**首页 slide class 必须带 `cover`，末页必须带 `end`**，controller 靠这两个 class 判断
 
 ## 参考文件
 
+- `assets/lint.py` — 装配后跑的静态密度 linter（无依赖，Python 3 stdlib）
 - `assets/skeleton.html` — 技术骨架（verbatim 拷入最终 deck）
 - `assets/layouts/index.html` — Layouts Gallery 入口，7 张 layout 缩略一览 + 锚点导航
 - `assets/layouts/<body|points|flow|table|cover|divider|break>.html` — 单版式 preview，可视化预览 + 顶部注释的数据形状 / 典型场景 / 关键机制 / 装配期注意（非装配模板，仅视觉参考）

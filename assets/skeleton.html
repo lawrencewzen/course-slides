@@ -27,7 +27,7 @@
 
     JS
     - DECK CONTROLLER                 （双 rAF 重播 / stepped / chrome 同步
-                                       / cover 隐 slogan / 键盘 / 点击翻页）
+                                       / cover+end 隐 slogan / 键盘 / 点击翻页）
 
   每页 slide 的**版式 CSS + HTML 结构**不在本骨架内。模型按 md 内容自由
   设计，受 SKILL.md 4 条视觉底线约束。单版式视觉参考见
@@ -203,13 +203,37 @@ body {
 .d7 { transition-delay: 1.30s; } .d8 { transition-delay: 1.50s; }
 .no-anim, .no-anim *, .no-anim *::before, .no-anim *::after { transition: none !important; }
 
-/* Stepped reveal (for 三条规则 / 三个动作 / 六步流程) */
+/* Stepped reveal (for 三条规则 / 三个动作 / 六步流程)
+   - .stepped 容器 + .step 子项：累积揭示（按 → 一条一条出）
+   - .windowed 容器 + .step 子项：定容轮播（按 → 一屏一屏换，旧的 .past 淡出上滑、新的淡入）
+     · 由 data-window="K" 声明每屏条数，屏数 = ⌈N/K⌉
+     · slide 进入时首屏 stage=1 自动显示
+     · 容器上自动生成 .pager 指示器（"1–K / N" 文本） */
 .step {
   opacity: 0; transform: translateY(14px);
   transition: opacity 0.6s cubic-bezier(0.2, 0.65, 0.2, 1),
               transform 0.6s cubic-bezier(0.2, 0.65, 0.2, 1);
 }
 .step.revealed { opacity: 1; transform: translateY(0); }
+.step.past { opacity: 0; transform: translateY(-10px); }
+
+/* Windowed carousel · 容器锁定首屏高度防页面跳动，末屏自动顶对齐留白 */
+.windowed {
+  position: relative;
+  min-height: var(--window-h, auto);
+}
+.windowed .pager {
+  position: absolute;
+  right: 0; bottom: -2.2cqw;
+  font-size: 0.95cqw;
+  color: var(--muted);
+  font-feature-settings: "tnum";
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.3s;
+}
+.slide.active.playing .windowed .pager { opacity: 1; }
+.windowed .pager b { color: var(--brand); font-weight: 600; }
 
 /* ============================================================
    6. GLOBAL SLOGAN + WATERMARK (品牌身份 · deck 级别全局 chrome / bg)
@@ -391,7 +415,7 @@ body {
     <span>已用 <span class="sec-elapsed" id="t-sec-elapsed">00:00</span></span>
   </div>
 
-  <!-- 底部 slogan 条 · cover 页由 controller 自动隐藏（cover 自己 footer 有 slogan 位） -->
+  <!-- 底部 slogan 条 · cover / end 页由 controller 自动隐藏（cover footer 自带 slogan 位；end 页自带收尾 slogan） -->
   <div class="deck-bottom" id="deck-bottom">
     <span class="brand">AI Spark</span>
     <span class="sep">·</span>
@@ -485,6 +509,51 @@ body {
 
   bcTotal.textContent = total;
 
+  // === Windowed carousel helpers ===
+  function getWindowed(slide) {
+    // 返回 slide 内所有 .windowed 容器 + 每个的 {container, K, N, stages}
+    return Array.from(slide.querySelectorAll('.windowed')).map(c => {
+      const K = parseInt(c.dataset.window || '0', 10);
+      const steps = Array.from(c.querySelectorAll('.step'));
+      const N = steps.length;
+      const stages = K > 0 ? Math.ceil(N / K) : 1;
+      return { c, K, N, stages, steps };
+    });
+  }
+  function ensurePager(w) {
+    let pager = w.c.querySelector(':scope > .pager');
+    if (!pager) {
+      pager = document.createElement('div');
+      pager.className = 'pager';
+      w.c.appendChild(pager);
+    }
+    return pager;
+  }
+  function applyWindowStage(w, stage) {
+    // stage 1-indexed; 超过 stages 裁到 stages
+    const s = Math.max(1, Math.min(stage, w.stages));
+    const lo = (s - 1) * w.K + 1;
+    const hi = Math.min(s * w.K, w.N);
+    w.steps.forEach((el, i) => {
+      const step = i + 1;
+      el.classList.remove('revealed', 'past');
+      if (step >= lo && step <= hi) el.classList.add('revealed');
+      else if (step < lo) el.classList.add('past');
+      // step > hi → pending (no class)
+    });
+    const pager = ensurePager(w);
+    pager.innerHTML = (lo === hi)
+      ? `<b>${lo}</b> / ${w.N}`
+      : `<b>${lo}–${hi}</b> / ${w.N}`;
+  }
+  function lockWindowHeight(w) {
+    // 进入第一屏时测当前实际高度，写到 --window-h，避免末屏项少时高度塌陷
+    const cs = getComputedStyle(w.c);
+    if (cs.getPropertyValue('--window-h').trim()) return;
+    const h = w.c.getBoundingClientRect().height;
+    if (h > 0) w.c.style.setProperty('--window-h', h + 'px');
+  }
+
   // === Show slide N ===
   function show(idx) {
     if (idx < 0 || idx >= total) return;
@@ -494,11 +563,18 @@ body {
     // toggle active class
     slides.forEach((s, i) => s.classList.toggle('active', i === idx));
 
-    // reset stepped state
+    // reset stepped state (累积式)
     if (active.classList.contains('stepped')) {
       active.dataset.stage = '0';
-      active.querySelectorAll('.step').forEach(s => s.classList.remove('revealed'));
-      // Also reset flow-node lit-by-step
+      active.querySelectorAll('.step').forEach(s => s.classList.remove('revealed', 'past'));
+    }
+    // init windowed state (轮播式 · 进入时首屏自动显示 stage=1)
+    const windows = getWindowed(active);
+    if (windows.length) {
+      active.dataset.winStage = '1';
+      windows.forEach(w => applyWindowStage(w, 1));
+      // 下一帧锁高度（此时首屏已渲染）
+      requestAnimationFrame(() => windows.forEach(lockWindowHeight));
     }
     active.querySelectorAll('[data-lit-step]').forEach(el => el.classList.remove('lit'));
 
@@ -510,10 +586,11 @@ body {
       active.classList.remove('no-anim');
       requestAnimationFrame(() => {
         active.classList.add('playing');
-        // also auto-light flow nodes if no stepped behavior
         if (!active.classList.contains('stepped')) {
           autoLightFlow(active);
         }
+        // 进入播放后下一帧量一次，让 container-query 布局先稳下来
+        requestAnimationFrame(() => checkOverflow(active, idx));
       });
     });
 
@@ -529,14 +606,44 @@ body {
     });
   }
 
+  // 溢出兜底：slide 进入 playing 后量一次，content 越过 slogan 安全线就 console.warn
+  // 阈值：安全线 = deck 底部 - 3.5cqw（slogan 条 + 呼吸）
+  function checkOverflow(slide, idx) {
+    const deck = document.querySelector('.deck');
+    const deckRect = deck.getBoundingClientRect();
+    const cqw = deckRect.width / 100;
+    const safeBottom = deckRect.bottom - 3.5 * cqw;
+    const candidates = slide.querySelectorAll(
+      '.body, .items, .demo-steps, .flow, table, .ascii-box, .quote'
+    );
+    let worstOverflow = 0;
+    let worstEl = null;
+    candidates.forEach(el => {
+      const r = el.getBoundingClientRect();
+      const over = r.bottom - safeBottom;
+      if (over > worstOverflow) { worstOverflow = over; worstEl = el; }
+    });
+    if (worstOverflow > 0) {
+      const overCqw = (worstOverflow / cqw).toFixed(2);
+      const tag = (worstEl.tagName || '').toLowerCase() +
+                  (worstEl.className ? '.' + worstEl.className.split(' ').join('.') : '');
+      console.warn(
+        `⚠ slide ${idx + 1} 溢出 slogan 安全线 · 超出 ${overCqw}cqw` +
+        ` · 最差元素: ${tag}` +
+        ` · 建议走 C 拆页或 A 轮播（data-window="K"）`
+      );
+    }
+  }
+
   function updateChrome(active) {
     const noChrome = active.dataset.noChrome === 'true';
     const isCover = active.classList.contains('cover');
+    const isEnd = active.classList.contains('end');
     const isBreak = active.classList.contains('break');
     const showChrome = !noChrome && !isCover;
 
     deckTop.classList.toggle('visible', showChrome);
-    deckBottom.classList.toggle('hidden', isCover);
+    deckBottom.classList.toggle('hidden', isCover || isEnd);
     if (showChrome) {
       const sec = active.dataset.section;
       const name = active.dataset.sectionName;
@@ -593,6 +700,18 @@ body {
         return;
       }
     }
+    // windowed 翻屏（取所有 .windowed 里最大的 stages 作为该 slide 的总屏数）
+    const windows = getWindowed(active);
+    if (windows.length) {
+      const maxStages = Math.max(...windows.map(w => w.stages));
+      const winStage = parseInt(active.dataset.winStage || '1', 10);
+      if (winStage < maxStages) {
+        const ns = winStage + 1;
+        active.dataset.winStage = String(ns);
+        windows.forEach(w => applyWindowStage(w, ns));
+        return;
+      }
+    }
     // Compare narrative toggle: data-toggle-compare
     if (active.dataset.toggleCompare === 'true') {
       const stage = document.getElementById('cmp3-stage');
@@ -618,6 +737,16 @@ body {
         active.querySelectorAll('.step').forEach(s => {
           if (parseInt(s.dataset.step, 10) > newStage) s.classList.remove('revealed');
         });
+        return;
+      }
+    }
+    const windows = getWindowed(active);
+    if (windows.length) {
+      const winStage = parseInt(active.dataset.winStage || '1', 10);
+      if (winStage > 1) {
+        const ns = winStage - 1;
+        active.dataset.winStage = String(ns);
+        windows.forEach(w => applyWindowStage(w, ns));
         return;
       }
     }
