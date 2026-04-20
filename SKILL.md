@@ -1,6 +1,6 @@
 ---
 name: course-slides
-description: 把 Markdown 源（课堂讲义 / 教程 / 技术分享稿 / 内部文档）转成带 AI Spark 品牌身份的单文件 .html 课堂 PPT。适用于 AI Spark 训练营、内部分享、课程录制等场景。**只要用户提到"把讲义/教程做成 PPT"、"上课用的幻灯片"、"分享会"、"训练营 PPT"、"course slides"，或者给了 .md 说要展示，就要触发本 skill。** 输入按 `references/source-schema.md` 规范化，缺失字段按降级策略处理（缺备注就留空，不自动编）。装配时从 `assets/skeleton.html` 整段拷技术骨架 + 品牌 tokens（CSS / JS controller / deck chrome / 演讲者备注 / 时间条 / 键盘控制），每页 slide 版式由模型按内容自由决定（`assets/example-deck.html` 只作思路参考不 copy），受 4 条视觉底线约束（白底 + 品牌蓝 #1E40FF 点缀 + 克制 Keynote 风 + 系统字体栈）。
+description: 把 Markdown 源（课堂讲义 / 教程 / 技术分享稿 / 内部文档）转成带 AI Spark 品牌身份的单文件 .html 课堂 PPT。适用于 AI Spark 训练营、内部分享、课程录制等场景。**只要用户提到"把讲义/教程做成 PPT"、"上课用的幻灯片"、"分享会"、"训练营 PPT"、"course slides"，或者给了 .md 说要展示，就要触发本 skill。** 输入按 `references/source-schema.md` 规范化，缺失字段按降级策略处理（缺备注就留空，不自动编）。装配时从 `assets/skeleton.html` 整段拷技术骨架 + 品牌 tokens（CSS / JS controller / deck chrome / 演讲者备注 / 时间条 / 键盘控制），每页 slide 版式由模型按内容自由决定，视觉参考 `assets/layouts/` 单版式 gallery，受 4 条视觉底线约束（白底 + 品牌蓝 #1E40FF 点缀 + 克制 Keynote 风 + 系统字体栈）。
 ---
 
 # course-slides · 讲义到课堂 PPT
@@ -84,16 +84,15 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
    - `<body>` 末尾 `.notes` 浮层 + `.hotkey-help` 浮层
    - `<script>` 里整段 DECK CONTROLLER（含 cover 页自动隐藏 `.deck-bottom` 逻辑）
    - 把 skeleton 里那张 `SKELETON-ONLY` 占位 slide 删掉
-2. 读 `assets/example-deck.html`，**只看不抄**：吸取版式思路（封面 / Divider / 休息页 / 步进页 / 表格 / 流程图 / 代码块的组织逻辑），但不要把里面任何版式-specific 的 CSS 或 HTML 结构照搬出来。每页版式按这节内容自由决定。
-3. 按 schema 生成每页 slide 插入 `.deck`：
+2. 按 schema 生成每页 slide 插入 `.deck`：
    - 每节至少一页 Divider + 若干内容页
    - 布局 / 信息密度 / 是否分步 / 用不用表格流程图 —— 按这节的内容决定，不受预设模板约束
    - 动画**不要重写**，复用骨架里 `.fade-up` / `.fade-in` / `.d1-.d8` / `.step` 这些 primitive class 就够；用法见 `references/animation-reference.md`
    - 必须遵守下面 4 条视觉底线
    - 视觉上吃不准某类页怎么排时，翻 `assets/layouts/` 对应版式的 preview + 顶部注释"数据形状 / 典型场景 / 关键机制 / 装配期注意"定位；layouts/ 只是视觉参考不是装配模板，每页版式仍按内容自由设计
    - **纯正文页规则**：如果一页是 eyebrow + h1 + 多段 body（可选 quote），slide class 要写 `content body`。`.body` 触发"quote 底部锚定"：quote 用 `margin-top: auto` 推到页面底部，段落顺着 fade-up 链从顶部展开。body 段数按内容自由选 2-6 段，**不要限制在 2 段**，内容充足时段落会自然撑满整页
-4. 首页必须有 logo + "AI Spark" 品牌名 + 讲义标题；末页必须有 End / Q&A
-5. 写入 `<source>-PPT.html`，浏览器打开验收
+3. 首页必须有 logo + "AI Spark" 品牌名 + 讲义标题；末页必须有 End / Q&A
+4. 写入 `<source>-PPT.html`，浏览器打开验收
 
 ## 视觉底线（4 条，硬性）
 
@@ -126,7 +125,6 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 ## 参考文件
 
 - `assets/skeleton.html` — 技术骨架（verbatim 拷入最终 deck）
-- `assets/example-deck.html` — 完整示例 deck（仅参考版式思路，不 copy）
 - `assets/layouts/index.html` — Layouts Gallery 入口，7 张 layout 缩略一览 + 锚点导航
 - `assets/layouts/<body|points|flow|table|cover|divider|break>.html` — 单版式 preview，可视化预览 + 顶部注释的数据形状 / 典型场景 / 关键机制 / 装配期注意（非装配模板，仅视觉参考）
 - `references/source-schema.md` — 输入字段 schema + 识别规则 + 降级策略
