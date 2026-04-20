@@ -1,4 +1,4 @@
-# course-deck
+# course-slides
 
 > Turn Markdown lecture notes into a single-file HTML slide deck — on-brand AI Spark, Keynote-restrained, ready to project.
 
@@ -37,15 +37,15 @@ The skill is built around AI Spark's identity — it's the brand the final deck 
 Works with both **Claude Code** and **OpenAI Codex CLI** — they use the same `SKILL.md` format.
 
 ```bash
-git clone https://github.com/lawrencewzen/course-deck.git
-cd course-deck
+git clone https://github.com/lawrencewzen/course-slides.git
+cd course-slides
 ./install.sh
 ```
 
 By default the script auto-detects which agents you have installed (`~/.claude/` and/or `~/.codex/`) and symlinks this repo into the matching skills directory:
 
-- `~/.claude/skills/course-deck/` — for Claude Code
-- `~/.codex/skills/course-deck/` — for Codex CLI
+- `~/.claude/skills/course-slides/` — for Claude Code
+- `~/.codex/skills/course-slides/` — for Codex CLI
 
 Flags if you want one side only:
 
@@ -62,8 +62,8 @@ Restart your agent (or start a new session) to pick up the skill. Then, in any p
 ### Uninstall
 
 ```bash
-rm ~/.claude/skills/course-deck   # Claude Code
-rm ~/.codex/skills/course-deck    # Codex
+rm ~/.claude/skills/course-slides   # Claude Code
+rm ~/.codex/skills/course-slides    # Codex
 ```
 
 (Both are symlinks — removing them doesn't delete the repo.)
@@ -71,7 +71,7 @@ rm ~/.codex/skills/course-deck    # Codex
 ## What's in here
 
 ```
-course-deck/
+course-slides/
 ├── SKILL.md                       ← skill definition loaded by Claude Code / Codex
 ├── references/
 │   ├── source-schema.md           ← Markdown → structured schema rules + graceful degradation

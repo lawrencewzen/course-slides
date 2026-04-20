@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Install course-deck as a Claude Code and/or Codex skill.
-# Symlinks this repo into ~/.claude/skills/course-deck and/or ~/.codex/skills/course-deck.
+# Install course-slides as a Claude Code and/or Codex skill.
+# Symlinks this repo into ~/.claude/skills/course-slides and/or ~/.codex/skills/course-slides.
 #
 # Usage:
 #   ./install.sh              install to both (if parent dirs exist)
@@ -22,7 +22,7 @@ MODE="${1:-auto}"
 install_one() {
   local label="$1"
   local parent="$2"
-  local target="${parent}/course-deck"
+  local target="${parent}/course-slides"
 
   mkdir -p "${parent}"
 

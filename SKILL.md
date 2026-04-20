@@ -1,9 +1,9 @@
 ---
-name: course-deck
+name: course-slides
 description: 把 Markdown 源（课堂讲义 / 教程 / 技术分享稿 / 内部文档）转成带 AI Spark 品牌身份的单文件 .html 课堂 PPT。适用于 AI Spark 训练营、内部分享、课程录制等场景。**只要用户提到"把讲义/教程做成 PPT"、"上课用的幻灯片"、"分享会"、"训练营 PPT"、"course slides"，或者给了 .md 说要展示，就要触发本 skill。** 输入按 `references/source-schema.md` 规范化，缺失字段按降级策略处理（缺备注就留空，不自动编）。装配时从 `assets/final-deck-example.html` 取技术骨架 + 品牌 tokens（CSS / JS controller / deck chrome / 演讲者备注 / 时间条 / 键盘控制），每页 slide 排版由模型按内容自由决定，受 4 条视觉底线约束（白底 + 品牌蓝 #1E40FF 点缀 + 克制 Keynote 风 + 系统字体栈）。
 ---
 
-# course-deck · 讲义到课堂 PPT
+# course-slides · 讲义到课堂 PPT
 
 把一份 md 变成一份能直接上台讲的单文件 HTML PPT。不是"导出 PDF 那种 PPT"，是带翻页、动画、演讲者备注、时间条、键盘控制的真正可放映的 PPT。
 
@@ -95,11 +95,11 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 
 品牌资产细节、关键技术技巧详见 `references/design-system.md`。
 
-## 后续改动走 playground 对照
+## 后续改动走 tweak 对照
 
 装配后要改某页，不直接动 `<source>-PPT.html`：
 
-1. 在同目录 `playground/` 下新建 `tweak-<描述>.html`，把要改的 slide 拎出来做新旧两版
+1. 在同目录 `tweaks/` 下新建 `tweak-<描述>.html`，把要改的 slide 拎出来做新旧两版
 2. 浏览器打开给用户看 before / after
 3. 用户点头后再把通过的版本落回正式 deck
 
