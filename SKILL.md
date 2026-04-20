@@ -1,6 +1,6 @@
 ---
 name: course-slides
-description: 把 Markdown 源（课堂讲义 / 教程 / 技术分享稿 / 内部文档）转成带 AI Spark 品牌身份的单文件 .html 课堂 PPT。适用于 AI Spark 训练营、内部分享、课程录制等场景。**只要用户提到"把讲义/教程做成 PPT"、"上课用的幻灯片"、"分享会"、"训练营 PPT"、"course slides"，或者给了 .md 说要展示，就要触发本 skill。** 输入按 `references/source-schema.md` 规范化，缺失字段按降级策略处理（缺备注就留空，不自动编）。装配时从 `assets/final-deck-example.html` 取技术骨架 + 品牌 tokens（CSS / JS controller / deck chrome / 演讲者备注 / 时间条 / 键盘控制），每页 slide 排版由模型按内容自由决定，受 4 条视觉底线约束（白底 + 品牌蓝 #1E40FF 点缀 + 克制 Keynote 风 + 系统字体栈）。
+description: 把 Markdown 源（课堂讲义 / 教程 / 技术分享稿 / 内部文档）转成带 AI Spark 品牌身份的单文件 .html 课堂 PPT。适用于 AI Spark 训练营、内部分享、课程录制等场景。**只要用户提到"把讲义/教程做成 PPT"、"上课用的幻灯片"、"分享会"、"训练营 PPT"、"course slides"，或者给了 .md 说要展示，就要触发本 skill。** 输入按 `references/source-schema.md` 规范化，缺失字段按降级策略处理（缺备注就留空，不自动编）。装配时从 `assets/skeleton.html` 整段拷技术骨架 + 品牌 tokens（CSS / JS controller / deck chrome / 演讲者备注 / 时间条 / 键盘控制），每页 slide 版式由模型按内容自由决定（`assets/example-deck.html` 只作思路参考不 copy），受 4 条视觉底线约束（白底 + 品牌蓝 #1E40FF 点缀 + 克制 Keynote 风 + 系统字体栈）。
 ---
 
 # course-slides · 讲义到课堂 PPT
@@ -78,13 +78,20 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 
 ## 装配
 
-1. 读 `assets/final-deck-example.html` 作为技术骨架 —— CSS tokens / JS controller / deck chrome / `<symbol id="logo-flame">` / 演讲者备注面板 / 时间条 / 键盘绑定全部原封不动复用
-2. 按 schema 生成每页 slide：
+1. 读 `assets/skeleton.html`，**整段 verbatim 拷入**最终 deck：
+   - `<style>` 里所有内容（CSS tokens / deck shell / chrome / slide base / animation primitives / notes / hotkey help / timer）—— 除了末尾 `SKELETON-ONLY · 占位 slide 样式` 那段，整段删掉
+   - `<body>` 里 `<symbol id="logo-flame">` + `.deck` 外壳 + `.deck-progress` + `.deck-top` + `.deck-timer`
+   - `<body>` 末尾 `.notes` 浮层 + `.hotkey-help` 浮层
+   - `<script>` 里整段 DECK CONTROLLER
+   - 把 skeleton 里那张 `SKELETON-ONLY` 占位 slide 删掉
+2. 读 `assets/example-deck.html`，**只看不抄**：吸取版式思路（封面 / Divider / 休息页 / 步进页 / 表格 / 流程图 / 代码块的组织逻辑），但不要把里面任何版式-specific 的 CSS 或 HTML 结构照搬出来。每页版式按这节内容自由决定。
+3. 按 schema 生成每页 slide 插入 `.deck`：
    - 每节至少一页 Divider + 若干内容页
    - 布局 / 信息密度 / 是否分步 / 用不用表格流程图 —— 按这节的内容决定，不受预设模板约束
-   - 但必须遵守下面 4 条视觉底线
-3. 首页必须有 logo + "AI Spark" 品牌名 + 讲义标题；末页必须有 End / Q&A
-4. 写入 `<source>-PPT.html`，浏览器打开验收
+   - 动画**不要重写**，复用骨架里 `.fade-up` / `.fade-in` / `.d1-.d8` / `.step` 这些 primitive class 就够；用法见 `references/animation-reference.md`
+   - 必须遵守下面 4 条视觉底线
+4. 首页必须有 logo + "AI Spark" 品牌名 + 讲义标题；末页必须有 End / Q&A
+5. 写入 `<source>-PPT.html`，浏览器打开验收
 
 ## 视觉底线（4 条，硬性）
 
@@ -93,7 +100,7 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 3. 尺寸用 `cqw`，字体用系统栈（PingFang SC / Hiragino Sans GB / Microsoft YaHei）；不引外部字体；不用 reveal.js / Slidev / Tailwind CDN
 4. 首页有 logo + "AI Spark"，末页有 End / Q&A
 
-品牌资产细节、关键技术技巧详见 `references/design-system.md`。
+品牌资产细节见 `references/design-system.md`；动画写法见 `references/animation-reference.md`。
 
 ## 后续改动走 tweak 对照
 
@@ -111,10 +118,12 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 - 不要用第三方框架（reveal.js / Slidev / Tailwind CDN）
 - 不要在内容页用整页深色底（只有代码块组件用 `#1a1d24`）
 - 不要加装饰 emoji（除休息页 ☕ 🚶 和状态 icon ⚠️ 📄 这种功能性）
-- 不要重写 deck chrome / JS controller —— 直接复用 `final-deck-example.html` 里的，那是验证过能用的
+- 不要重写 deck chrome / JS controller / 动画 primitive —— 直接复用 `skeleton.html` 里的，那是验证过能用的
 
 ## 参考文件
 
+- `assets/skeleton.html` — 技术骨架（verbatim 拷入最终 deck）
+- `assets/example-deck.html` — 完整示例 deck（仅参考版式思路，不 copy）
 - `references/source-schema.md` — 输入字段 schema + 识别规则 + 降级策略
-- `references/design-system.md` — 品牌资产清单 + 3 个关键技术技巧
-- `assets/final-deck-example.html` — 技术骨架捐赠体（完整可放映的 PPT 范本）
+- `references/design-system.md` — 品牌资产清单
+- `references/animation-reference.md` — 动画 primitive class 清单 + 核心技术技巧 + 合法例外 + 禁止清单
