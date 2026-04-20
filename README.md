@@ -27,14 +27,23 @@ Typical outcome: 9-section lecture → ~36 slides in ~30 minutes of interaction.
 
 ## Install
 
-This skill lives in `~/.claude/skills/course-deck/`. To install from this repo:
-
 ```bash
-git clone https://github.com/<you>/course-deck.git ~/code/course-deck
-ln -s ~/code/course-deck ~/.claude/skills/course-deck
+git clone https://github.com/lawrencewzen/course-deck.git
+cd course-deck
+./install.sh
 ```
 
-Then in Claude Code: open a project with a Markdown lecture and say *"把这份讲义做成 PPT"* — the skill will trigger automatically.
+The script symlinks this repo into `~/.claude/skills/course-deck/`. If that path already exists as a real directory, it gets moved to a timestamped backup. If it's an old symlink, you'll be asked before it's replaced.
+
+Restart Claude Code (or start a new session) to pick up the skill. Then, in any project with a Markdown lecture, say *"把这份讲义做成 PPT"* — the skill triggers automatically.
+
+### Uninstall
+
+```bash
+rm ~/.claude/skills/course-deck
+```
+
+(It's a symlink — removing it doesn't delete the repo.)
 
 ## What's in here
 
