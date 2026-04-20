@@ -55,30 +55,56 @@
 
 ## 2. Markdown 源 → Schema 的识别规则
 
-跑解析器时，按下面的正则/特征提取：
+**核心原则**：识别靠**语义**不靠**固定标记**。用户可能用 §N / 第一节 / Chapter 1 / 零编号 / 一、二、三 —— 都要吃得下。下面给的模式只是**非穷举举例**，AI 遇到变体要按常识推广，不确定就问用户。
 
-### `section.heading`
-- `## §N、xxx` / `## §N xxx` / `## N、xxx` → `heading = "xxx"`, `number = N`
-- `# 一、xxx` / `# 二、xxx` → 中文数字转阿拉伯数字
-- `## xxx` 无编号 → `heading = "xxx"`，按出现顺序自动 `number`
+### `section.heading` + `section.number`
+
+标题识别不限符号，以下写法都认：
+- `## §N、xxx` / `## §N xxx` / `§N xxx`
+- `## N、xxx` / `## N. xxx` / `## N xxx`
+- `# 一、xxx` / `## 第一节 xxx` / `第一章 xxx`（中文数字自动转阿拉伯）
+- `## Chapter N: xxx` / `## Section N xxx`
+- `## xxx` 纯标题无编号 → 按出现顺序自动 `number`
+
+`number` 缺失时**永远按 md 里 `##` 的出现顺序编**，不依赖文本里写没写编号。
 
 ### `section.duration`
-- 同一行或下一行带 `· Nmin` / `· N min` / `(N 分钟)` / `[N min]` → `duration = N`
-- 整份讲义找不到任何时长标记 → 全部省略时间条
 
-### `section.speaker_strategy`
-- Section 内有 `> 讲解策略：xxx` blockquote → 提出全文
-- Section 内有 `### 讲解策略` / `**讲解策略**：` 标题块 → 提该块全部段落
+任何"数字 + 时间单位"的写法都识别：
+- `· 5min` / `· 5 min` / `· 5 分钟`
+- `(5 分钟)` / `（5min）` / `[5 min]`
+- `⏱ 5` / `⏰ 5min` / `🕐 5 分钟`
+- `用 5 分钟讲完` / `5 分钟` / `预计 5min`
+- 标题同行 / 紧跟下一行 / section 开头第一个 blockquote 里，都要扫
 
-### `section.speaker_speak`
-- 同上规则，关键词换成 `跟学员说` / `对学员说` / `讲师原话` / `口语脚本`
+单位转分钟：`sec / s / 秒` → `/ 60`；`h / hr / 小时` → `× 60`。
+
+整份找不到任何时长标记 → 不写 `duration_total`，所有 section `duration` 留空，时间条整体隐藏。
+
+### `section.speaker_strategy` / `section.speaker_speak`
+
+**关键词识别**（不限位置：blockquote / 标题块 / 行内加粗都认）：
+- strategy 关键词：`讲解策略` / `策略` / `讲师视角` / `怎么讲` / `备注` / `speaker strategy`
+- speak 关键词：`跟学员说` / `对学员说` / `讲师原话` / `口语脚本` / `台词` / `speaker speak`
+
+命中关键词 → 提该块全文作为对应字段。若一段话既可能是 strategy 又可能是 speak，按关键词优先级判；都没关键词但明显是讲师口吻的 blockquote，**不要猜**，留空。
 
 ### `section.bridge`
-- `speaker_speak` 的**第一句**（句号前）自动作为 `bridge`
-- 或显式 `> 承上启下：xxx` → 直接取
+
+- 优先：显式 `> 承上启下：xxx`
+- 次选：`speaker_speak` 的**第一句**（第一个句号前）
+- 都没有 → 留空，**不从正文首句改写**
 
 ### `section.is_break`
-- `heading` 匹配 `/休息|break|中场|走一走|走动/i` → `true`
+
+- `heading` 匹配 `/休息|break|中场|走一走|走动|喝水|暂停/i` → `true`
+- 或 section body 只有一两行"休息一下"类文本，且 duration < 15 min → `true`
+
+### 模糊识别的处置
+
+- **写法不在上面列举里但语义明显** → 按常识识别，不要死咬字面模式
+- **看着像但不确定**（比如 `14:30 开场` 可能是时刻表不是时长） → **问用户一句**，别强解
+- **同一份 md 有的节有加分项有的没有** → 逐节独立判定，**不统一降级也不统一强装**
 
 ### `section.body` → `ContentBlock[]` 拆分
 - 按 `###` 小节标题拆
