@@ -6,6 +6,8 @@ A [Claude Code Skill](https://docs.claude.com/en/docs/claude-code/skills) that c
 
 Built for 2–3 hour single-presenter lectures, bootcamps, and internal deep-dive sessions.
 
+Shipped with the **AI Spark** brand baked in on purpose — if you're on the AI Spark team (or want that exact look), you can run the skill and get on-brand decks without touching design. See [Brand: AI Spark](#brand-ai-spark) below.
+
 ## What you get
 
 - **One file, no build step** — pure HTML + CSS + JS, double-click to open
@@ -13,6 +15,21 @@ Built for 2–3 hour single-presenter lectures, bootcamps, and internal deep-div
 - **Restrained by default** — white background, brand accent ≤10%, Apple-Keynote-style fade-and-rise animations (no bouncing, no spinning)
 - **Deterministic flow** — a 12-question interview locks design decisions before any HTML is written, so you don't get surprise typography
 - **4 rounds of playground** — cover, divider, content, components each rendered as side-by-side candidates you pick from, so the final deck matches your taste
+
+## Brand: AI Spark
+
+This skill ships with the **AI Spark** brand identity as its default — not a placeholder. Templates, the final deck example, and every playground seed all reference it.
+
+| Asset | Value |
+|---|---|
+| Name | AI Spark |
+| Primary color | `#1E40FF` (CSS variable `--brand`) |
+| Slogan | 始于火花 · 成于实战 |
+| Logo | 火苗 (flame) SVG, defined once as `<symbol id="logo-flame">` and reused across cover / divider / chrome |
+
+If you're running a course under the AI Spark banner, just run the skill — the interview's brand question defaults to "keep AI Spark" and you'll get on-brand decks with no extra input.
+
+**Want a different brand?** The interview lets you override logo, color, and slogan at the start. Once locked, every playground round and the final deck use your replacements instead. The defaults only matter when you don't specify anything.
 
 ## How it works
 
