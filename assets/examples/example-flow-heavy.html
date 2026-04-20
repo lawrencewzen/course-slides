@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<!--
+  =====================================================================
+  EXAMPLE · 图形重 · 通用示例 deck
+  ---------------------------------------------------------------------
+  ⚠️ 这是**通用示例**，内容纯占位，看版式组合就好。
+     不是任何真实课程、真实业务、真实学员案例。
+
+  主题："一杯手冲咖啡的制作"（抽象到不含任何业务信息）
+  侧重：flow 出现两次（基础版 + 进阶版带 future 节点）+ points 一次
+  用到版式：cover · divider · flow · points · break · table
+  **不用** body —— 图形重定位下少文字段落
+
+  结构：8 页
+    1. cover          · 封面
+    2. divider §1     · 节首分段
+    3. flow           · 5 步核心流程（顺序点亮）
+    4. points         · 4 件必备器具
+    5. flow           · 进阶版流程（带 future 虚框节点）
+    6. break          · 5 min 喝一口
+    7. table          · 粉水比对照
+    8. cover          · End / Q&A
+
+  装配参考：看 SKILL.md + assets/layouts/ gallery。
+  =====================================================================
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一杯手冲咖啡 · AI Spark</title>
+<style>
+/* ============================================================
+   1. ROOT TOKENS · RESET
+   ============================================================ */
+:root {
+  --brand: #1E40FF;
+  --brand-soft: #EEF1FF;
+  --brand-faint: #F5F7FF;
+  --flame-1: #FFA92E;
+  --flame-2: #EF4D2A;
+  --flame-3: #C42138;
+  --ink: #0A0A0A;
+  --ink-2: #3A3A3C;
+  --muted: #8E8E93;
+  --muted-2: #C7C7CC;
+  --line: #E5E5EA;
+  --line-2: #F0F0F3;
+  --bg: #F5F5F7;
+  --code-bg: #1a1d24;
+  --code-bg-2: #21252e;
+  --code-fg: #d4d8e0;
+  --code-line: #6b7280;
+  --code-com: #5c6577;
+  --code-num: #f78c6c;
+  --code-str: #c3e88d;
+  --warn: #b45309;
+  --done: #047857;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ============================================================
+   2. DECK SHELL (16:9 letterboxed)
+   ============================================================ */
+.deck {
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  background: white;
+  position: relative;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+/* ============================================================
+   3. SHARED CHROME (top progress + breadcrumb + pageno)
+   ============================================================ */
+.deck-progress {
+  position: absolute; top: 0; left: 0; right: 0; height: 0.18cqw;
+  background: var(--line-2); z-index: 50;
+}
+.deck-progress .fill {
+  height: 100%; background: var(--brand);
+  width: 0%;
+  transition: width 0.5s cubic-bezier(0.2, 0.65, 0.2, 1);
+}
+.deck-top {
+  position: absolute; top: 2.4cqw; left: 5cqw; right: 5cqw;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 1cqw; color: var(--muted); letter-spacing: 0.03em;
+  z-index: 49;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.deck-top.visible { opacity: 1; }
+.deck-top .breadcrumb { display: flex; align-items: center; gap: 0.7cqw; color: var(--ink-2); }
+.deck-top .breadcrumb .sec { color: var(--brand); font-weight: 600; }
+.deck-top .breadcrumb .div { color: var(--muted-2); }
+.logo-mini { display: block; aspect-ratio: 100 / 110; height: auto; }
+.deck-top .breadcrumb .logo-mini { width: 1.4cqw; flex-shrink: 0; }
+.deck-top .pageno { font-feature-settings: "tnum"; color: var(--muted); }
+.deck-top .pageno b { color: var(--ink-2); font-weight: 600; }
+
+/* ============================================================
+   4. SLIDE BASE & TRANSITION
+   ============================================================ */
+.slide {
+  position: absolute; inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* shared content shell padding */
+.slide.content {
+  background: white;
+  padding: 8cqw 6cqw 5cqw;
+  display: flex; flex-direction: column;
+}
+.slide.content .eyebrow {
+  font-size: 1.1cqw; color: var(--brand); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  margin-bottom: 1.3cqw;
+}
+.slide.content h1 {
+  font-size: 4.4cqw; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.15;
+  margin-bottom: 2.4cqw;
+}
+.slide.content h1.smaller { font-size: 3.6cqw; }
+.slide.content h1.tiny { font-size: 3.2cqw; margin-bottom: 1.6cqw; }
+.slide.content h1 .accent {
+  background: linear-gradient(transparent 70%, var(--brand-soft) 70%);
+  padding: 0 0.05em;
+}
+.slide.content .body {
+  display: flex; flex-direction: column; gap: 1.4cqw;
+  font-size: 1.55cqw; line-height: 1.65; color: var(--ink-2);
+  max-width: 92%;
+}
+.slide.content .body p strong {
+  color: var(--ink); font-weight: 600;
+  border-bottom: 0.18cqw solid var(--brand);
+  padding-bottom: 0.05cqw;
+}
+.slide.content .body .key {
+  color: var(--brand); font-weight: 600;
+}
+.slide.content .quote {
+  margin-top: 2cqw;
+  padding: 1.4cqw 1.6cqw;
+  background: var(--brand-faint);
+  border-left: 0.25cqw solid var(--brand);
+  font-size: 1.4cqw; line-height: 1.6;
+  color: var(--ink); font-weight: 500;
+  font-style: italic;
+}
+
+/* ============================================================
+   5. ANIMATION PRIMITIVES
+   ============================================================ */
+.fade-up {
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.85s cubic-bezier(0.2, 0.65, 0.2, 1),
+              transform 0.85s cubic-bezier(0.2, 0.65, 0.2, 1);
+}
+.slide.active.playing .fade-up { opacity: 1; transform: translateY(0); }
+.fade-in {
+  opacity: 0;
+  transition: opacity 0.85s cubic-bezier(0.2, 0.65, 0.2, 1);
+}
+.slide.active.playing .fade-in { opacity: 1; }
+.d1 { transition-delay: 0.10s; } .d2 { transition-delay: 0.30s; }
+.d3 { transition-delay: 0.50s; } .d4 { transition-delay: 0.70s; }
+.d5 { transition-delay: 0.90s; } .d6 { transition-delay: 1.10s; }
+.d7 { transition-delay: 1.30s; } .d8 { transition-delay: 1.50s; }
+.no-anim, .no-anim *, .no-anim *::before, .no-anim *::after { transition: none !important; }
+
+/* Stepped reveal (for 三条规则 / 三个动作 / 六步流程) */
+.step {
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.6s cubic-bezier(0.2, 0.65, 0.2, 1),
+              transform 0.6s cubic-bezier(0.2, 0.65, 0.2, 1);
+}
+.step.revealed { opacity: 1; transform: translateY(0); }
+
+/* ============================================================
+   6. GLOBAL SLOGAN + WATERMARK (品牌身份 · deck 级别全局 chrome / bg)
+   ============================================================ */
+/* 底部 slogan 条：挂在 .deck 上（不在 slide 里），居中品牌蓝 */
+.deck-bottom {
+  position: absolute;
+  bottom: 1.8cqw; left: 0; right: 0;
+  text-align: center;
+  font-size: 0.9cqw;
+  color: var(--brand);
+  letter-spacing: 0.05em;
+  z-index: 49;
+  transition: opacity 0.3s ease;
+}
+.deck-bottom .brand { font-weight: 600; }
+.deck-bottom .sep { margin: 0 0.5em; opacity: 0.5; }
+.deck-bottom.hidden { opacity: 0; pointer-events: none; }
+
+/* 背景水印层：flame + "AI Spark" 黑剪影，居中极淡，全部页面都显示 */
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 550 130'><g fill='%230A0A0A'><path d='M 62 6 C 56 14 50 20 48 24 L 38 12 L 36 28 C 22 38 14 54 14 72 C 14 94 30 104 50 104 C 70 104 86 94 86 72 C 86 48 76 26 62 6 Z'/><text x='115' y='92' font-family='-apple-system,system-ui,sans-serif' font-weight='700' font-size='92' letter-spacing='-3'>AI Spark</text></g></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 41%;
+  opacity: 0.015;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================================================
+   15. SPEAKER NOTES PANEL
+   ============================================================ */
+.notes {
+  position: fixed;
+  right: 16px; bottom: 16px;
+  width: 380px; max-height: 60vh;
+  background: rgba(20, 20, 22, 0.96);
+  color: #e5e5ea;
+  border-radius: 12px;
+  padding: 18px 20px;
+  font-size: 13px; line-height: 1.65;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 200;
+  overflow: auto;
+  display: none;
+}
+.notes.visible { display: block; }
+.notes .title {
+  font-size: 11px; color: #8e8e93;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.notes h3 {
+  font-size: 14px; color: white;
+  margin-bottom: 10px; font-weight: 600;
+}
+.notes .strategy {
+  margin-bottom: 12px; padding: 8px 10px;
+  background: rgba(30, 64, 255, 0.18);
+  border-left: 3px solid #3b67ff;
+  border-radius: 4px;
+  color: #c8d4ff;
+}
+.notes .speak {
+  color: #d4d4d8;
+}
+.notes .speak::before {
+  content: '→ ';
+  color: #6b7280;
+}
+
+/* ============================================================
+   16. HOTKEY HELP OVERLAY
+   ============================================================ */
+.hotkey-help {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 300;
+}
+.hotkey-help.visible { display: flex; }
+.hotkey-help .panel {
+  background: white;
+  border-radius: 12px;
+  padding: 28px 36px;
+  font-size: 14px; line-height: 2;
+  min-width: 320px;
+}
+.hotkey-help .panel h3 {
+  font-size: 18px; font-weight: 600;
+  margin-bottom: 12px;
+}
+.hotkey-help kbd {
+  display: inline-block; padding: 1px 8px;
+  background: #f0f0f3; border: 1px solid #d8d8dc;
+  border-radius: 4px;
+  font-family: ui-monospace, monospace; font-size: 12px;
+  margin-right: 6px; min-width: 28px; text-align: center;
+}
+
+/* ============================================================
+   17. TIMER (top-left, only visible on stage with breadcrumb)
+   ============================================================ */
+.deck-timer {
+  position: absolute; top: 2.4cqw; left: 50%;
+  transform: translateX(-50%);
+  font-size: 1cqw;
+  color: var(--muted);
+  font-feature-settings: "tnum";
+  z-index: 49;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.deck-timer.visible { opacity: 1; }
+.deck-timer b { color: var(--ink-2); font-weight: 600; }
+.deck-timer .sec-elapsed { color: var(--brand); font-weight: 600; }
+.deck-timer .sep-dot { color: var(--muted-2); margin: 0 0.4cqw; }
+
+/* ============================================================
+   LAYOUT · COVER
+   ============================================================ */
+.slide.cover {
+  background: white;
+  padding: 5cqw 6cqw;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.slide.cover .top { display: flex; align-items: center; gap: 0.9cqw; }
+.slide.cover .top svg.logo-mini { width: 2.4cqw; }
+.slide.cover .top .brand { font-size: 1.15cqw; color: var(--ink-2); letter-spacing: 0.02em; font-weight: 500; }
+.slide.cover .top .sep { color: var(--muted); font-size: 1.15cqw; margin: 0 0.3cqw; }
+.slide.cover .top .meta { font-size: 1.15cqw; color: var(--muted); }
+.slide.cover .center { flex: 1; display: flex; flex-direction: column; justify-content: center; margin-top: -3cqw; }
+.slide.cover .eyebrow {
+  font-size: 1.3cqw; color: var(--brand); font-weight: 600;
+  letter-spacing: 0.06em; margin-bottom: 1.6cqw; text-transform: uppercase;
+}
+.slide.cover h1 { font-size: 7.4cqw; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: var(--ink); }
+.slide.cover h1 .accent { position: relative; display: inline-block; }
+.slide.cover h1 .accent::after {
+  content: ''; position: absolute;
+  left: 0; right: 0; bottom: -0.4cqw;
+  height: 0.5cqw; background: var(--brand);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 1s cubic-bezier(0.2, 0.65, 0.2, 1) 1.0s;
+}
+.slide.cover.active.playing h1 .accent::after { transform: scaleX(1); }
+.slide.cover .subtitle { margin-top: 2cqw; font-size: 1.7cqw; color: var(--ink-2); line-height: 1.5; }
+.slide.cover .footer {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  font-size: 1.1cqw; color: var(--muted);
+}
+.slide.cover .footer .slogan { color: var(--ink-2); font-weight: 500; letter-spacing: 0.05em; }
+
+/* ============================================================
+   LAYOUT · DIVIDER
+   ============================================================ */
+.slide.divider {
+  background: white;
+  padding: 5cqw 6cqw;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.slide.divider .center { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4cqw; margin-top: -1cqw; }
+.slide.divider .num {
+  font-size: 22cqw; font-weight: 700;
+  color: var(--brand-soft); line-height: 0.85;
+  letter-spacing: -0.04em; font-feature-settings: "tnum";
+}
+.slide.divider .num .hash { color: var(--brand); font-size: 0.4em; vertical-align: top; margin-right: 0.05em; font-weight: 600; }
+.slide.divider .label {
+  font-size: 1.1cqw; color: var(--brand); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  margin-bottom: 1.4cqw;
+}
+.slide.divider h1 { font-size: 6.4cqw; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+.slide.divider .bridge {
+  margin-top: 1.8cqw; padding-left: 1.2cqw;
+  border-left: 0.25cqw solid var(--brand);
+  font-size: 1.85cqw; color: var(--ink); font-weight: 500; line-height: 1.55;
+}
+.slide.divider .bridge .quote-mark { color: var(--brand); font-weight: 700; margin-right: 0.2em; }
+.slide.divider .meta-row {
+  margin-top: 2.4cqw;
+  display: flex; align-items: center; gap: 1.4cqw;
+  font-size: 1.15cqw; color: var(--muted);
+}
+.slide.divider .meta-row .pill {
+  display: inline-flex; align-items: center; gap: 0.4cqw;
+  padding: 0.4cqw 0.9cqw;
+  background: var(--brand-faint); color: var(--brand);
+  border-radius: 999px; font-weight: 600; font-size: 1.05cqw;
+}
+.slide.divider .progress {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.6cqw; border-top: 1px solid var(--line); padding-top: 1.4cqw;
+}
+.slide.divider .ticks { display: flex; gap: 0.4cqw; }
+.slide.divider .tick { width: 2cqw; height: 0.35cqw; background: var(--line); border-radius: 999px; }
+.slide.divider .tick.done { background: var(--muted-2); }
+.slide.divider .tick.current { background: var(--brand); width: 3cqw; }
+.slide.divider .progress .label-r { font-size: 1.1cqw; color: var(--muted); }
+
+/* ============================================================
+   LAYOUT · POINTS
+   ============================================================ */
+.slide.points .items { display: grid; grid-template-columns: 1fr; gap: 2cqw; }
+.slide.points .items.compact { gap: 1.4cqw; }
+.slide.points .item {
+  display: grid; grid-template-columns: auto 1fr; gap: 2.4cqw;
+  align-items: baseline; padding-bottom: 1.6cqw;
+  border-bottom: 1px solid var(--line);
+}
+.slide.points .items.compact .item { padding-bottom: 1cqw; }
+.slide.points .item:last-child { border-bottom: none; padding-bottom: 0; }
+.slide.points .item .num {
+  font-size: 4.4cqw; font-weight: 700;
+  color: var(--brand-soft); line-height: 0.9;
+  letter-spacing: -0.02em; font-feature-settings: "tnum";
+  min-width: 5.5cqw;
+}
+.slide.points .items.compact .item .num { font-size: 3.4cqw; min-width: 4.5cqw; }
+.slide.points .item .text .head {
+  font-size: 2.1cqw; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.01em;
+  margin-bottom: 0.5cqw; line-height: 1.25;
+}
+.slide.points .items.compact .item .text .head { font-size: 1.7cqw; margin-bottom: 0.3cqw; }
+.slide.points .item .text .desc {
+  font-size: 1.3cqw; color: var(--ink-2); line-height: 1.6; max-width: 95%;
+}
+.slide.points .items.compact .item .text .desc { font-size: 1.15cqw; }
+
+/* ============================================================
+   LAYOUT · FLOW
+   ============================================================ */
+.flow { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2cqw 0; }
+.flow-row { display: flex; align-items: center; justify-content: center; gap: 0; }
+.flow-node {
+  background: white;
+  border: 0.18cqw solid var(--line);
+  border-radius: 0.7cqw;
+  padding: 1.4cqw 1.7cqw;
+  text-align: center;
+  min-width: 9cqw;
+  transition: all 0.5s cubic-bezier(0.2, 0.65, 0.2, 1);
+  opacity: 0.4; transform: scale(0.96);
+}
+.flow-node.lit {
+  border-color: var(--brand);
+  background: var(--brand-faint);
+  opacity: 1; transform: scale(1);
+  box-shadow: 0 0.3cqw 1.2cqw rgba(30, 64, 255, 0.15);
+}
+.flow-node.future { border-style: dashed; color: var(--muted); }
+.flow-node.future.lit { background: white; border-color: var(--muted-2); color: var(--muted); box-shadow: none; }
+.flow-node .name {
+  font-size: 1.4cqw; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.01em; line-height: 1.2;
+}
+.flow-node.lit .name { color: var(--brand); }
+.flow-node.future.lit .name { color: var(--muted); }
+.flow-node .desc {
+  font-size: 0.95cqw; color: var(--muted);
+  margin-top: 0.4cqw;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.flow-arrow {
+  height: 0.25cqw;
+  flex: 0 0 2.4cqw;
+  background: var(--line); position: relative;
+  transition: background 0.5s ease;
+}
+.flow-arrow::after {
+  content: ''; position: absolute;
+  right: -0.4cqw; top: 50%; transform: translateY(-50%);
+  border: 0.45cqw solid transparent;
+  border-left-color: var(--line);
+  transition: border-left-color 0.5s ease;
+}
+.flow-arrow.lit { background: var(--brand); }
+.flow-arrow.lit::after { border-left-color: var(--brand); }
+.flow-arrow.lit::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; height: 100%; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
+  animation: flow-light 1.4s linear infinite;
+}
+@keyframes flow-light {
+  0% { left: -30%; }
+  100% { left: 100%; }
+}
+.flow-arrow.future { border-top: 0.18cqw dashed var(--muted-2); background: transparent; }
+.flow-arrow.future::after { border-left-color: var(--muted-2); }
+.flow-legend {
+  margin-top: 2cqw;
+  display: flex; gap: 2cqw; align-items: center; justify-content: center;
+  font-size: 1cqw; color: var(--muted);
+}
+.flow-legend .swatch {
+  display: inline-block;
+  width: 1.1cqw; height: 0.6cqw; border-radius: 2px;
+  vertical-align: middle; margin-right: 0.3cqw;
+}
+.flow-legend .swatch.now { background: var(--brand); }
+.flow-legend .swatch.future { background: var(--line); border: 1px dashed var(--muted-2); }
+
+/* ============================================================
+   LAYOUT · TABLE
+   ============================================================ */
+.slide.table-page .sub { font-size: 1.4cqw; color: var(--ink-2); line-height: 1.5; margin-bottom: 2.4cqw; max-width: 90%; }
+.slide.table-page table { width: 100%; border-collapse: collapse; font-size: 1.45cqw; background: white; }
+.slide.table-page thead th {
+  background: var(--brand-faint); color: var(--brand); font-weight: 600;
+  text-align: left; padding: 1.2cqw 1.4cqw;
+  font-size: 1.2cqw; letter-spacing: 0.04em;
+  border-bottom: 0.15cqw solid var(--brand);
+}
+.slide.table-page tbody td {
+  padding: 1.3cqw 1.4cqw;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2); line-height: 1.5; vertical-align: top;
+}
+.slide.table-page tbody tr:last-child td { border-bottom: none; }
+.slide.table-page tbody td.col-name {
+  color: var(--ink); font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+  font-size: 1.3cqw;
+}
+.slide.table-page tbody td.col-stars {
+  color: var(--brand); font-weight: 600; font-size: 1.3cqw; white-space: nowrap;
+}
+
+/* ============================================================
+   LAYOUT · BREAK
+   ============================================================ */
+.slide.break {
+  background: var(--brand-faint);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 5cqw;
+}
+.slide.break .icon { font-size: 8cqw; line-height: 1; margin-bottom: 1.6cqw; }
+.slide.break .label {
+  font-size: 1.2cqw; color: var(--brand); font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 1cqw;
+}
+.slide.break h1 { font-size: 6cqw; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 1.6cqw; }
+.slide.break .duration { font-size: 2cqw; color: var(--ink-2); font-weight: 500; margin-bottom: 2.4cqw; }
+.slide.break .hint { font-size: 1.3cqw; color: var(--muted); line-height: 1.6; max-width: 60%; }
+</style>
+</head>
+<body>
+
+<!-- Shared SVG defs for the flame logo -->
+<svg width="0" height="0" style="position: absolute;">
+  <symbol id="logo-flame" viewBox="0 0 100 110">
+    <linearGradient id="flameG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFA92E"/>
+      <stop offset=".55" stop-color="#EF4D2A"/>
+      <stop offset="1" stop-color="#C42138"/>
+    </linearGradient>
+    <linearGradient id="dropG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF2E1"/>
+      <stop offset="1" stop-color="#FCD9B8"/>
+    </linearGradient>
+    <path fill="url(#flameG)" stroke="white" stroke-width="6" stroke-linejoin="round" style="paint-order: stroke fill"
+          d="M 62 6 C 56 14 50 20 48 24 L 38 12 L 36 28 C 22 38 14 54 14 72 C 14 94 30 104 50 104 C 70 104 86 94 86 72 C 86 48 76 26 62 6 Z"/>
+    <path fill="url(#dropG)"
+          d="M 50 56 C 38 68 36 82 42 92 C 46 100 54 100 58 92 C 64 82 62 68 50 56 Z"/>
+  </symbol>
+</svg>
+
+<div class="deck">
+
+  <!-- ===== Deck-wide chrome ===== -->
+  <div class="deck-progress"><div class="fill" id="prog-fill"></div></div>
+  <div class="deck-top" id="deck-top">
+    <div class="breadcrumb">
+      <svg class="logo-mini"><use href="#logo-flame"/></svg>
+      <span class="sec" id="bc-sec"></span>
+      <span class="div">/</span>
+      <span id="bc-name"></span>
+    </div>
+    <div class="pageno">页 <b id="bc-page">1</b> / <span id="bc-total">1</span></div>
+  </div>
+  <div class="deck-timer" id="deck-timer">
+    <span>本节 <b id="t-sec-name"></b></span>
+    <span class="sep-dot">·</span>
+    <span>计划 <b id="t-sec-budget"></b> min</span>
+    <span class="sep-dot">·</span>
+    <span>已用 <span class="sec-elapsed" id="t-sec-elapsed">00:00</span></span>
+  </div>
+
+  <!-- 底部 slogan 条 · cover 页由 controller 自动隐藏（cover 自己 footer 有 slogan 位） -->
+  <div class="deck-bottom" id="deck-bottom">
+    <span class="brand">AI Spark</span>
+    <span class="sep">·</span>
+    <span>始于火花 成于实战</span>
+  </div>
+
+  <!-- ===========================================================
+       SLIDES · 这里按 md 内容插入每页 slide
+       ===========================================================
+       每个 slide 用：
+         <div class="slide [cover|content|divider|break]"
+              data-section="N" data-section-name="..."
+              data-time="N"  (duration in min, 可选)
+              data-notes-strategy="..." (可选)
+              data-notes-speak="..."    (可选)
+              data-no-chrome="true"     (封面/休息/结束页用)
+              data-steps="K"            (步进 reveal 页加，配 .stepped class)
+              class="... stepped">      (走步进 reveal 时)
+           ...
+         </div>
+
+       版式 CSS + HTML 结构**不在骨架里**，按内容自由设计；
+       单版式视觉参考翻 assets/layouts/<layout>.html。
+       =========================================================== -->
+
+  <!-- ============================================================
+       Slide 1 · COVER · 封面
+       ============================================================ -->
+  <div class="slide cover" data-section="0" data-section-name="一杯手冲咖啡">
+    <div class="top fade-up d1">
+      <svg class="logo-mini"><use href="#logo-flame"/></svg>
+      <span class="brand">AI Spark</span>
+      <span class="sep">·</span>
+      <span class="meta">通用示例 · 图形重</span>
+    </div>
+    <div class="center">
+      <div class="eyebrow fade-up d2">POUR-OVER · THE PROCESS</div>
+      <h1>
+        <div class="fade-up d3">一杯手冲</div>
+        <div class="fade-up d4"><span class="accent">咖啡</span>的做法</div>
+      </h1>
+      <div class="subtitle fade-up d5">从豆子到入口——五步主流程 + 一张粉水比对照表</div>
+    </div>
+    <div class="footer fade-up d6">
+      <span class="slogan">始于火花 · 成于实战</span>
+      <span>20 min · 示例 · 内容占位</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Slide 2 · DIVIDER §1
+       ============================================================ -->
+  <div class="slide divider" data-section="1" data-section-name="主流程">
+    <div></div>
+    <div class="center">
+      <div class="num fade-up d2"><span class="hash">§</span>1</div>
+      <div>
+        <div class="label fade-up d3">Section · THE FLOW</div>
+        <h1 class="fade-up d4">从豆子到一杯</h1>
+        <div class="bridge fade-up d5">
+          <span class="quote-mark">「</span>不用上手冲壶也能理解的五步——先看流程，再谈细节。<span class="quote-mark">」</span>
+        </div>
+        <div class="meta-row fade-up d6">
+          <span class="pill">⏱ 12 min</span>
+          <span>先过流程，再拆器具和参数</span>
+        </div>
+      </div>
+    </div>
+    <div class="progress fade-in d6">
+      <div class="ticks">
+        <span class="tick current"></span>
+        <span class="tick"></span>
+      </div>
+      <span class="label-r">第 1 / 2 节</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Slide 3 · FLOW · 核心 5 步
+       ============================================================ -->
+  <div class="slide content" data-section="1" data-section-name="主流程">
+    <div class="eyebrow fade-up d1">核心流程</div>
+    <h1 class="fade-up d2 smaller">五步走完<span class="accent">一杯</span></h1>
+    <div class="flow">
+      <div>
+        <div class="flow-row">
+          <div class="flow-node" data-lit-step="1">
+            <div class="name">磨豆</div>
+            <div class="desc">15 g · 中细</div>
+          </div>
+          <div class="flow-arrow" data-lit-step="2"></div>
+          <div class="flow-node" data-lit-step="3">
+            <div class="name">烧水</div>
+            <div class="desc">92℃</div>
+          </div>
+          <div class="flow-arrow" data-lit-step="4"></div>
+          <div class="flow-node" data-lit-step="5">
+            <div class="name">闷蒸</div>
+            <div class="desc">30 g · 30 s</div>
+          </div>
+          <div class="flow-arrow" data-lit-step="6"></div>
+          <div class="flow-node" data-lit-step="7">
+            <div class="name">注水</div>
+            <div class="desc">绕圈 · 3 段</div>
+          </div>
+          <div class="flow-arrow" data-lit-step="8"></div>
+          <div class="flow-node" data-lit-step="9">
+            <div class="name">出杯</div>
+            <div class="desc">2:30 完成</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Slide 4 · POINTS · 4 件必备器具
+       ============================================================ -->
+  <div class="slide content points stepped" data-section="1" data-section-name="主流程" data-steps="4">
+    <div class="eyebrow fade-up d1">器具</div>
+    <h1 class="fade-up d2 smaller">四件你得有的<span class="accent">家伙</span></h1>
+    <div class="items compact">
+      <div class="item step" data-step="1">
+        <div class="num">01</div>
+        <div class="text">
+          <div class="head">手摇磨豆机</div>
+          <div class="desc">决定成败的第一步。出豆的粗细均匀度，比你选什么豆重要得多。入门选 C40 这类定位就行。</div>
+        </div>
+      </div>
+      <div class="item step" data-step="2">
+        <div class="num">02</div>
+        <div class="text">
+          <div class="head">细嘴手冲壶</div>
+          <div class="desc">壶嘴细、倒水稳的就够用。不锈钢即可，温控款是加分项但非必需——用温度计外挂更省钱。</div>
+        </div>
+      </div>
+      <div class="item step" data-step="3">
+        <div class="num">03</div>
+        <div class="text">
+          <div class="head">滤杯 + 滤纸</div>
+          <div class="desc">V60 是最通用的起步。滤纸用前先润湿一下，去纸味 + 贴合滤杯。</div>
+        </div>
+      </div>
+      <div class="item step" data-step="4">
+        <div class="num">04</div>
+        <div class="text">
+          <div class="head">电子克秤</div>
+          <div class="desc">0.1 g 精度、能计时最好。"凭感觉"是入门最大的坑——前两周必须靠秤校准肌肉记忆。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Slide 5 · FLOW · 进阶版（带 future 节点）
+       ============================================================ -->
+  <div class="slide content" data-section="2" data-section-name="进阶">
+    <div class="eyebrow fade-up d1">进阶</div>
+    <h1 class="fade-up d2 smaller">把流程<span class="accent">拧</span>得更细</h1>
+    <div class="flow">
+      <div>
+        <div class="flow-row">
+          <div class="flow-node" data-lit-step="1">
+            <div class="name">选豆</div>
+            <div class="desc">浅烘 · 7 天内</div>
+          </div>
+          <div class="flow-arrow" data-lit-step="2"></div>
+          <div class="flow-node" data-lit-step="3">
+            <div class="name">磨粉</div>
+            <div class="desc">筛掉细粉</div>
+          </div>
+          <div class="flow-arrow" data-lit-step="4"></div>
+          <div class="flow-node" data-lit-step="5">
+            <div class="name">三段注水</div>
+            <div class="desc">40 / 90 / 90 g</div>
+          </div>
+          <div class="flow-arrow future"></div>
+          <div class="flow-node future">
+            <div class="name">换豆</div>
+            <div class="desc">拼配 / 日晒</div>
+          </div>
+          <div class="flow-arrow future"></div>
+          <div class="flow-node future">
+            <div class="name">换壶</div>
+            <div class="desc">鹅颈 · Flair</div>
+          </div>
+        </div>
+        <div class="flow-legend fade-in d6">
+          <span><span class="swatch now"></span>先吃透这三步</span>
+          <span><span class="swatch future"></span>之后再折腾</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Slide 6 · BREAK
+       ============================================================ -->
+  <div class="slide break" data-section="0" data-section-name="小休息" data-no-chrome="true">
+    <div class="icon fade-up d1">☕</div>
+    <div class="label fade-up d2">中场休息</div>
+    <h1 class="fade-up d3">喝一口 · 歇口气</h1>
+    <div class="duration fade-up d4">5 min</div>
+    <div class="hint fade-up d5">回来之前先闻一下你手边这杯——好的咖啡闻起来应该是甜的，不是焦的。</div>
+  </div>
+
+  <!-- ============================================================
+       Slide 7 · TABLE · 粉水比对照
+       ============================================================ -->
+  <div class="slide content table-page" data-section="2" data-section-name="进阶">
+    <div class="eyebrow fade-up d1">参数</div>
+    <h1 class="fade-up d2 smaller">粉水比<span class="accent">对照</span></h1>
+    <div class="sub fade-up d3">入门选一个粉水比守住，别频繁换。先跑熟一个口味，再调。</div>
+    <table class="fade-in d4">
+      <thead>
+        <tr>
+          <th style="width: 18%;">粉水比</th>
+          <th style="width: 22%;">克数（15 g 粉）</th>
+          <th>口味取向</th>
+          <th style="width: 18%;">推荐度</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">1 : 14</td>
+          <td>15 g · 210 g</td>
+          <td>浓郁、酸质收敛、body 厚。适合深烘豆或喜欢"咖啡味重"的入口。</td>
+          <td class="col-stars">★★</td>
+        </tr>
+        <tr>
+          <td class="col-name">1 : 15</td>
+          <td>15 g · 225 g</td>
+          <td>入门最稳。浓淡平衡、容错率高、不容易冲苦。推荐第一周固定用这个。</td>
+          <td class="col-stars">★★★★</td>
+        </tr>
+        <tr>
+          <td class="col-name">1 : 16</td>
+          <td>15 g · 240 g</td>
+          <td>风味清晰、酸质上扬、适合浅烘精品豆。对手法要求更高——水流快就容易淡。</td>
+          <td class="col-stars">★★★</td>
+        </tr>
+        <tr>
+          <td class="col-name">1 : 17</td>
+          <td>15 g · 255 g</td>
+          <td>像茶，适合展示豆子的花果香。技术不稳会直接变水。进阶玩法。</td>
+          <td class="col-stars">★★</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================================
+       Slide 8 · COVER · End
+       ============================================================ -->
+  <div class="slide cover" data-section="0" data-section-name="End">
+    <div class="top fade-up d1">
+      <svg class="logo-mini"><use href="#logo-flame"/></svg>
+      <span class="brand">AI Spark</span>
+      <span class="sep">·</span>
+      <span class="meta">End · Q &amp; A</span>
+    </div>
+    <div class="center">
+      <div class="eyebrow fade-up d2">END · TIME TO POUR</div>
+      <h1>
+        <div class="fade-up d3">现在</div>
+        <div class="fade-up d4">去<span class="accent">冲</span>一杯</div>
+      </h1>
+      <div class="subtitle fade-up d5">问答时间——你最困扰的是哪一步？</div>
+    </div>
+    <div class="footer fade-up d6">
+      <span class="slogan">始于火花 · 成于实战</span>
+      <span>Thanks · AI Spark</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Speaker notes panel ===== -->
+<div class="notes" id="notes">
+  <div class="title">演讲者备注</div>
+  <h3 id="notes-title"></h3>
+  <div class="strategy" id="notes-strategy" hidden></div>
+  <div class="speak" id="notes-speak"></div>
+</div>
+
+<!-- ===== Hotkey help overlay ===== -->
+<div class="hotkey-help" id="hotkey-help">
+  <div class="panel">
+    <h3>键盘快捷键</h3>
+    <div><kbd>→</kbd> <kbd>Space</kbd> 下一步 / 下一页</div>
+    <div><kbd>←</kbd> 上一步 / 上一页</div>
+    <div><kbd>Home</kbd> 第一页 · <kbd>End</kbd> 最后一页</div>
+    <div><kbd>N</kbd> 演讲者备注</div>
+    <div><kbd>F</kbd> 全屏</div>
+    <div><kbd>T</kbd> 时间条 (本节用时)</div>
+    <div><kbd>?</kbd> 显示/隐藏本面板</div>
+    <div><kbd>Esc</kbd> 关闭</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DECK CONTROLLER
+   ============================================================ */
+(function () {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+  let sectionStartTime = Date.now();
+  let lastSection = null;
+  let timerVisible = false;
+  let notesVisible = false;
+  let helpVisible = false;
+
+  // === Chrome elements ===
+  const progFill = document.getElementById('prog-fill');
+  const deckTop = document.getElementById('deck-top');
+  const bcSec = document.getElementById('bc-sec');
+  const bcName = document.getElementById('bc-name');
+  const bcPage = document.getElementById('bc-page');
+  const bcTotal = document.getElementById('bc-total');
+  const deckTimer = document.getElementById('deck-timer');
+  const tSecName = document.getElementById('t-sec-name');
+  const tSecBudget = document.getElementById('t-sec-budget');
+  const tSecElapsed = document.getElementById('t-sec-elapsed');
+  const notes = document.getElementById('notes');
+  const notesTitle = document.getElementById('notes-title');
+  const notesStrategy = document.getElementById('notes-strategy');
+  const notesSpeak = document.getElementById('notes-speak');
+  const help = document.getElementById('hotkey-help');
+  const deckBottom = document.getElementById('deck-bottom');
+
+  bcTotal.textContent = total;
+
+  // === Show slide N ===
+  function show(idx) {
+    if (idx < 0 || idx >= total) return;
+    current = idx;
+    const active = slides[idx];
+
+    // toggle active class
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+
+    // reset stepped state
+    if (active.classList.contains('stepped')) {
+      active.dataset.stage = '0';
+      active.querySelectorAll('.step').forEach(s => s.classList.remove('revealed'));
+      // Also reset flow-node lit-by-step
+    }
+    active.querySelectorAll('[data-lit-step]').forEach(el => el.classList.remove('lit'));
+
+    // restart entry animations
+    active.classList.add('no-anim');
+    active.classList.remove('playing');
+    void active.offsetWidth;
+    requestAnimationFrame(() => {
+      active.classList.remove('no-anim');
+      requestAnimationFrame(() => {
+        active.classList.add('playing');
+        // also auto-light flow nodes if no stepped behavior
+        if (!active.classList.contains('stepped')) {
+          autoLightFlow(active);
+        }
+      });
+    });
+
+    // chrome
+    updateChrome(active);
+    updateNotes(active);
+  }
+
+  function autoLightFlow(slide) {
+    const lits = slide.querySelectorAll('[data-lit-step]');
+    lits.forEach((el, i) => {
+      setTimeout(() => el.classList.add('lit'), 200 + i * 200);
+    });
+  }
+
+  function updateChrome(active) {
+    const noChrome = active.dataset.noChrome === 'true';
+    const isCover = active.classList.contains('cover');
+    const isBreak = active.classList.contains('break');
+    const showChrome = !noChrome && !isCover;
+
+    deckTop.classList.toggle('visible', showChrome);
+    deckBottom.classList.toggle('hidden', isCover);
+    if (showChrome) {
+      const sec = active.dataset.section;
+      const name = active.dataset.sectionName;
+      bcSec.textContent = sec === '0' ? '' : '§' + sec;
+      bcName.textContent = name || '';
+      bcPage.textContent = current + 1;
+    }
+    progFill.style.width = ((current + 1) / total * 100) + '%';
+
+    // section change → reset timer
+    const sec = active.dataset.section;
+    if (sec !== lastSection) {
+      lastSection = sec;
+      sectionStartTime = Date.now();
+    }
+    if (timerVisible && showChrome && sec !== '0') {
+      tSecName.textContent = active.dataset.sectionName || '';
+      tSecBudget.textContent = active.dataset.time || '?';
+      deckTimer.classList.add('visible');
+    } else {
+      deckTimer.classList.remove('visible');
+    }
+  }
+
+  function updateNotes(active) {
+    const strategy = active.dataset.notesStrategy || '';
+    const speak = active.dataset.notesSpeak || '';
+    const sec = active.dataset.section;
+    const name = active.dataset.sectionName;
+    notesTitle.textContent = sec === '0'
+      ? (name || '封面')
+      : '§' + sec + ' · ' + (name || '');
+    if (strategy) {
+      notesStrategy.textContent = '策略：' + strategy;
+      notesStrategy.hidden = false;
+    } else {
+      notesStrategy.hidden = true;
+    }
+    notesSpeak.textContent = speak || '（无备注）';
+  }
+
+  // === Step / nav ===
+  function next() {
+    const active = slides[current];
+    if (active.classList.contains('stepped')) {
+      const stage = parseInt(active.dataset.stage || '0', 10);
+      const max = parseInt(active.dataset.steps || '0', 10);
+      if (stage < max) {
+        const newStage = stage + 1;
+        active.dataset.stage = String(newStage);
+        active.querySelectorAll('.step').forEach(s => {
+          if (parseInt(s.dataset.step, 10) <= newStage) s.classList.add('revealed');
+        });
+        return;
+      }
+    }
+    // Compare narrative toggle: data-toggle-compare
+    if (active.dataset.toggleCompare === 'true') {
+      const stage = document.getElementById('cmp3-stage');
+      if (stage && !stage.classList.contains('is-good')) {
+        stage.classList.add('is-good');
+        const eb = document.getElementById('cmp3-eyebrow');
+        const tt = document.getElementById('cmp3-title');
+        if (eb) eb.textContent = '工作流的样子';
+        if (tt) tt.textContent = '同样的事，工作流是这样的';
+        return;
+      }
+    }
+    show(current + 1);
+  }
+
+  function prev() {
+    const active = slides[current];
+    if (active.classList.contains('stepped')) {
+      const stage = parseInt(active.dataset.stage || '0', 10);
+      if (stage > 0) {
+        const newStage = stage - 1;
+        active.dataset.stage = String(newStage);
+        active.querySelectorAll('.step').forEach(s => {
+          if (parseInt(s.dataset.step, 10) > newStage) s.classList.remove('revealed');
+        });
+        return;
+      }
+    }
+    if (active.dataset.toggleCompare === 'true') {
+      const stage = document.getElementById('cmp3-stage');
+      if (stage && stage.classList.contains('is-good')) {
+        stage.classList.remove('is-good');
+        const eb = document.getElementById('cmp3-eyebrow');
+        const tt = document.getElementById('cmp3-title');
+        if (eb) eb.textContent = '没有工作流的样子';
+        if (tt) tt.textContent = '同一件事，散装做是这样的';
+        return;
+      }
+    }
+    show(current - 1);
+  }
+
+  // === Section timer ===
+  function tickTimer() {
+    const elapsed = Math.floor((Date.now() - sectionStartTime) / 1000);
+    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const s = (elapsed % 60).toString().padStart(2, '0');
+    tSecElapsed.textContent = m + ':' + s;
+  }
+  setInterval(tickTimer, 1000);
+
+  // === Keyboard ===
+  document.addEventListener('keydown', (e) => {
+    if (helpVisible && e.key !== '?' && e.key !== 'Escape') return;
+    switch (e.key) {
+      case 'ArrowRight':
+      case ' ':
+      case 'PageDown':
+      case 'Enter':
+        e.preventDefault(); next(); break;
+      case 'ArrowLeft':
+      case 'PageUp':
+        e.preventDefault(); prev(); break;
+      case 'Home':
+        e.preventDefault(); show(0); break;
+      case 'End':
+        e.preventDefault(); show(total - 1); break;
+      case 'n': case 'N':
+        notesVisible = !notesVisible;
+        notes.classList.toggle('visible', notesVisible);
+        break;
+      case 'f': case 'F':
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
+        break;
+      case 't': case 'T':
+        timerVisible = !timerVisible;
+        updateChrome(slides[current]);
+        break;
+      case '?':
+        helpVisible = !helpVisible;
+        help.classList.toggle('visible', helpVisible);
+        break;
+      case 'Escape':
+        if (helpVisible) { helpVisible = false; help.classList.remove('visible'); }
+        else if (notesVisible) { notesVisible = false; notes.classList.remove('visible'); }
+        break;
+    }
+  });
+
+  // === Click navigation ===
+  document.querySelector('.deck').addEventListener('click', (e) => {
+    // ignore clicks on notes / help
+    if (e.target.closest('.notes, .hotkey-help')) return;
+    next();
+  });
+
+  // === Init ===
+  show(0);
+})();
+</script>
+
+</body>
+</html>

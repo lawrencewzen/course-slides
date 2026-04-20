@@ -127,6 +127,7 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 - `assets/skeleton.html` — 技术骨架（verbatim 拷入最终 deck）
 - `assets/layouts/index.html` — Layouts Gallery 入口，7 张 layout 缩略一览 + 锚点导航
 - `assets/layouts/<body|points|flow|table|cover|divider|break>.html` — 单版式 preview，可视化预览 + 顶部注释的数据形状 / 典型场景 / 关键机制 / 装配期注意（非装配模板，仅视觉参考）
+- `assets/examples/example-<text|flow|table>-heavy.html` — 3 份通用示例 deck，各 8 页完整串法。文字密 / 图形重 / 结构化三种定位，演示多版式组合 + 转场节奏 + controller 真跑；装配新 deck 吃不准"整份怎么串"时翻这里。**内容纯占位，别拿来当业务参考**
 - `references/source-schema.md` — 输入字段 schema + 识别规则 + 降级策略
 - `references/design-system.md` — 品牌资产清单
 - `references/animation-reference.md` — 动画 primitive class 清单 + 核心技术技巧 + 合法例外 + 禁止清单
