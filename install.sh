@@ -86,5 +86,8 @@ esac
 echo
 echo "Restart your agent (Claude Code / Codex) or start a new session to pick up the skill."
 echo
-echo "Optional: to enable assets/visual_check.py (headless pixel overflow check), run once:"
-echo "  pip install playwright && python3 -m playwright install chromium"
+echo "Optional dependencies:"
+echo "  assets/visual_check.py (headless pixel-level checks):"
+echo "    pip install playwright && python3 -m playwright install chromium"
+echo "  assets/export_pdf.py (deck → multi-page PDF for students):"
+echo "    pip install Pillow   # playwright/chromium 已在上面装过"

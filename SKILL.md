@@ -332,6 +332,29 @@ python3 -m playwright install chromium
 
 （具体告警对应什么操作，细则见上面"自改决策"表；迭代上限 / 死循环退出见"迭代上限 / 退出条件"段。本 skill 在一次用户请求内跑完闭环，不要把告警清单丢给用户让他自己改。）
 
+### 交付给学员的 PDF（可选）
+
+交付前用户常要一份静态 PDF 发给学员（线下发讲义 / 课后复习 / 截不了图的人）。三道关干净后跑：
+
+```bash
+# 默认 2560×1440 × 3x = 实际 7680×4320，打印 / 4K 屏都锐利（47 页典型 ~35 MB）
+python3 assets/export_pdf.py <source>-PPT.html
+
+# 省体积（群里直接发 / 私信）
+python3 assets/export_pdf.py <source>-PPT.html --compact
+
+# 按演示端标准降清
+python3 assets/export_pdf.py <source>-PPT.html --viewport projector   # FHD 1920×1080
+python3 assets/export_pdf.py <source>-PPT.html --viewport 4k          # 4K
+
+# 轮播页每屏都导（默认只导首屏；文件会变大）
+python3 assets/export_pdf.py <source>-PPT.html --windowed-all
+```
+
+脚本跟 visual_check 用同一套 DOM 技巧：逐页强制 `.active .playing .no-anim` + stepped 全展开 + windowed 显首屏 + data-lit-step 全点亮，保证每页截到的是"最大可见态"。Playwright 截 PNG，Pillow 拼多页 PDF。
+
+依赖加一个 Pillow：`pip install Pillow`（Playwright 和 chromium 前面已装过）。
+
 ## 后续改动走 tweak 对照
 
 两种情形走 `tweaks/`：
@@ -359,7 +382,8 @@ python3 -m playwright install chromium
 ## 参考文件
 
 - `assets/lint.py` — 装配后跑的静态密度 linter（无依赖，Python 3 stdlib）
-- `assets/visual_check.py` — 装配后跑的像素级自检（headless Chromium + Playwright），抓 lint 抓不到的越线 / 撑宽；可选 `--screenshots` 导出每页 PNG
+- `assets/visual_check.py` — 装配后跑的像素级自检（headless Chromium + Playwright），抓 lint 抓不到的越线 / 撑宽 / 稀疏 / 结构缺失；可选 `--screenshots` 导出每页 PNG
+- `assets/export_pdf.py` — 交付给学员的静态 PDF 导出（headless Chromium + Pillow），按 `.active` class 逐页截图拼成多页 PDF；`--compact` 省体积、`--viewport 2560x1440` 高清、`--windowed-all` 把定容轮播每屏都导成独立页
 - `assets/skeleton.html` — 技术骨架（verbatim 拷入最终 deck）
 - `assets/layouts/index.html` — Layouts Gallery 入口，7 张 layout 缩略一览 + 锚点导航
 - `assets/layouts/<body|points|flow|table|cover|divider|break>.html` — 单版式 preview，可视化预览 + 顶部注释的数据形状 / 典型场景 / 关键机制 / 装配期注意（非装配模板，仅视觉参考）
