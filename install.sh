@@ -85,3 +85,6 @@ esac
 
 echo
 echo "Restart your agent (Claude Code / Codex) or start a new session to pick up the skill."
+echo
+echo "Optional: to enable assets/visual_check.py (headless pixel overflow check), run once:"
+echo "  pip install playwright && python3 -m playwright install chromium"

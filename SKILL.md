@@ -103,6 +103,24 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
    - `<body>` 末尾 `.notes` 浮层 + `.hotkey-help` 浮层
    - `<script>` 里整段 DECK CONTROLLER（含 cover 页自动隐藏 `.deck-bottom` 逻辑）
    - 把 skeleton 里那张 `SKELETON-ONLY` 占位 slide 删掉
+**5 个版式的 DOM 结构是 CSS 硬依赖，不能自由写扁平结构**（否则样式全不命中：h1 回退 default 字号撑破版 / flex 丢了变居中 / autoLightFlow JS 找不到节点不跑动画）：
+
+- `.divider`：必须 `<div></div>（顶占位） + .center > .num + (label + h1 + bridge + meta-row > .pill + 副标) + .progress > .ticks + .label-r`（看 `assets/layouts/divider.html`）
+- `.break`：必须平铺 `.icon + .label + h1 + .duration + .hint`（看 `assets/layouts/break.html`）
+- `.cover / .end`：子元素命名 `.top / .center（含 eyebrow + h1 + .subtitle）/ .footer`，**不是** `cover-top / cover-center / cover-title`（看 `assets/layouts/cover.html`）
+- `.flow`（含 flow-row 的页）：slide class 写 `slide content`（不带 `flow`），内层必须 `.flow > .flow-row > .flow-node + .flow-arrow`；每个 node / arrow 要有 `data-lit-step="N"`（1-indexed）才能触发 autoLightFlow 依次点亮动画（看 `assets/layouts/flow.html`）
+
+装这五种"结构敏感"版式时，直接对照 `assets/layouts/*.html` 里的嵌套顺序抄，别自己发挥扁平写法。body / points / table 相对宽松，结构错了视觉会明显掉段也容易修。
+
+**md 代码块要做语义判断**，别看到 ```...``` 就一律做成 `<pre class="code">` 深色窗：
+
+- **真代码 / 目录树 / 命令**（含 `/` `.md` `├──` `└──` `bash` `python` `def ` `function ` `const ` 等）→ 保留深色代码窗
+- **ASCII 流程图**（含 `→` `←` `⇒` 或形如 `A → B → C` 的节点串、✅ / 🔲 / TODO / "后面加" 这种状态标注）→ **改做 flow 版式**（`.flow > .flow-row > .flow-node + .flow-arrow`），已完成节点普通样式、未来节点加 `.future` 虚框
+
+一句话：**深色窗是给字符排版不重要的代码；flow 是给概念流动**。错用 code 块表达流程会失去视觉层级和动画。
+
+**别担心漏**：装配后 `visual_check.py` 的"结构告警"会逐页核对必备 selector 是否齐，缺一条报一条（含具体缺哪个嵌套）；自修闭环自动 `rewrite_layout_from_reference` 照模板重写该页。
+
 2. 按 schema 生成每页 slide 插入 `.deck`：
    - 每节至少一页 Divider + 若干内容页
    - 布局 / 信息密度 / 是否分步 / 用不用表格流程图 —— 按这节的内容决定，不受预设模板约束
@@ -182,9 +200,77 @@ skill **逐节扫描**，**不看标题符号**（§1 / 一、/ 1. / 纯 `## 标
 - 学员需要**对照着做**（§8 六步流程这种手把手清单）——全可见 > 节奏好
 - 参考表 / 目录结构（学员要截屏）——拆页比轮播友好
 
-### 装配后必跑：静态 lint（闭环）
+### 装配后必跑：自修闭环（skill 硬职责）
 
-**装配完不算完**。跑一遍 linter，收敛到 0 告警才算交付：
+**装配完不算完，也不是丢给用户一份告警让他改**。本 skill 在**一次用户请求内**跑完整个自修闭环：装配 → 检查 → 自改 → 回归 → … 直到干净或到迭代上限 → 最终报告。用户只看最终结果，不需要在每轮告警后点头。
+
+#### 闭环伪码
+
+```
+max_iter = 5
+for i in 1..max_iter:
+    lint_report  = lint.py --json <deck>          # 结构阈值
+    visual_report = visual_check.py --json <deck> # 像素级（溢出 + 稀疏 + 字号）
+    if lint_report.clean and visual_report.clean:
+        break
+    逐条告警按下面「自改决策」就地改 <deck>       # 不问用户，直接 Edit
+最终报告:
+    - 迭代 N 轮
+    - 前 N-1 轮改过哪些 slide、改了什么（"slide 5: body → points.two-col"）
+    - 最终 0 告警 / 还剩 X 条无法自改的（解释为什么，建议用户手动处理）
+```
+
+#### 自改决策（机器可读 `fix_options` 映射具体操作）
+
+lint 和 visual_check 的 `--json` 里每条告警都带 `fix_options: [...]` 列表。按下面映射执行：
+
+| fix_option | 怎么改 |
+|---|---|
+| `split_page` | 复制整页，eyebrow / h1 保留、h1 后缀"（1/2）"/"（2/2）"，把 items / paras / rows 切成 3+3 / 3+4 等；`data-section` / `data-time` 两页相同 |
+| `windowed_carousel` | 给超量容器加 `class="windowed"` + `data-window="K"`（每屏 K 条 = 原上限），里面的 child 加 `class="step" data-step="N"`（1-indexed） |
+| `reduce_items` | 删掉语义最弱的 1-2 条 item（通常是重复 / 补充性说明） |
+| `shrink_headings` | h1 字号从 6-8cqw 降到 4-5cqw；eyebrow 缩到 0.8cqw |
+| `drop_columns` | 表格删掉信息密度最低的 1 列 |
+| `vertical_layout` | `.flow-row` 改 `.flow-col`（竖向） |
+| `split_phases` | 按语义分阶段（输入 / 处理 / 输出）拆成 2-3 页 |
+| `switch_to_points_grid` | `.body` 容器换成 `<div class="points"><div class="items two-col">...</div></div>`；每条短段落抽成 `<div class="item"><div class="num">N</div><div class="name">短标题</div><div class="desc">描述</div></div>`；短标题从原段落首 2-4 字 / 前半句提取，描述用后半句 |
+| `balance_typography` | 正文 p 字号提到 ≥1.3cqw；或 h1 降到 ≤5cqw |
+| `add_content_or_center` | 若该页是刻意的"一句话 slide"，给 slide 加 `class="hero"` 压 padding 居中；否则从源 md 对应 section 抽一句 quote / 一条 meta 补进来 |
+| `rewrite_layout_from_reference` | 结构必备嵌套缺失。打开 `assets/layouts/<layout>.html`（divider / break / cover / flow），整段照嵌套顺序重写该页；保留原数据（eyebrow 文字 / h1 / bridge / meta / 节点 name+desc），只换壳结构。**别删内容，只修结构** |
+| `manual_review` | skill 自己改不动（语义模糊、需要外部信息），降级到 `tweaks/` 对照流程，只在最终报告里列出 |
+
+**关键原则**：`switch_to_points_grid` 这类"重写结构"的操作，skill 是 agent 层完成的——读源 md 的原文拆短标题 / 描述，不是 heuristic 脚本。agent 带语义理解，`slide 5 那 4 条是并列规则还是递进步骤`这种判断能做。
+
+#### 迭代上限 / 退出条件
+
+- 5 轮无限制自改，达到 0 告警就提前退出
+- 第 N 轮和第 N-1 轮改的是同一批 slide 且告警没少 → 判定死循环，停下，报告"第 N 轮后无法收敛，剩 X 条"
+- 任一轮改完某页导致**新增**告警（如 switch_to_points_grid 后新的 points 反而超量）→ 该页回退到上一轮状态，该告警标记为 `manual_review`
+
+#### 最终报告格式
+
+```
+✅ deck 已生成: <source>-PPT.html
+   · 装配 22 页，自修 2 轮达到 0 告警
+   · 自改记录：
+     - slide 5  §1 "什么是 AI First" · body → points.two-col（4 条短 bullet 挤在左上）
+     - slide 12 §3 "六步流程" · demo_steps 7 条 → 拆成 slide 12a/12b 各 3+4
+   · 肉眼建议再翻一遍：首页 logo、末页 End/Q&A、第 5 页新 points 卡片排布
+```
+
+如果有 `manual_review`：
+
+```
+⚠ 有 1 条无法自改，建议你手动过一眼：
+   - slide 14 §4 "数据对比" · table 越右 1.2cqw · 列太多但每列都是必要数据
+     → 放 tweaks/tweak-slide-14-table.html 对照了两个候选（删列版 / 横屏版），开浏览器挑一个
+```
+
+---
+
+下面是闭环里用到的两个检查脚本 + 一道最后肉眼关的详情。脚本的 `--json` 输出是 skill 自修决策的输入。
+
+#### 1. 静态 lint（结构阈值）
 
 ```bash
 python3 assets/lint.py <source>-PPT.html
@@ -192,31 +278,68 @@ python3 assets/lint.py <source>-PPT.html
 
 linter 按结构阈值扫所有 slide，抓 `.points / .demo-steps / tbody / .body / .flow-row` 的超量，每条告警给出"slide N · §N · 容器 · 实际/阈值 · 建议"。`data-window` 已开的容器自动跳过（不误报 A 用户）。
 
-**工作流**：
-
-```
-assemble  →  lint
-           ├─ 0 告警 → 交付
-           └─ 有告警 → 就地改（C 拆 or A 开 data-window）→ lint → …
-```
-
 **豁免**（per-slide opt-out）：某页确实放得下（如 compact padding / 字号特调），在该 `.slide` 上加 `data-lint-skip="<kind>[,<kind>]"`，值从下面这列拿：`points_single` / `points_two` / `points_cmp` / `demo_steps` / `table_rows` / `body_paras` / `flow_nodes`。
 
 **别滥用豁免**。豁免 = "我肉眼验过了真的放得下"。新加内容（多了一行 / 长了一句）要重新验证。
 
-### 运行时二道关：controller 溢出 warning
+#### 2. 视觉自检（像素级溢出 · headless 浏览器跑一遍）
 
-linter 只抓结构超量，抓不到像素级（标题换行撑破版 / 长 cell 撑宽）。controller 进入每页时补一道检测：`.body / .items / .demo-steps / .flow / table / .ascii-box / .quote` 跨过 slogan 安全线（deck 底 - 3.5cqw）就往浏览器 console 打：
+lint 只抓结构数量，抓不到**真正让用户看不到内容**的场景：
 
+- 6 条 points 数量没超但第 5、6 条被挤到 slogan 以下 / 16:9 屏外
+- 长标题换行撑高 h1，把底下正文顶出去
+- 长 cell 把 table 撑宽到右边越界
+- 字号 / padding / line-height 叠加后越过 slogan 安全线
+- **版式必备嵌套缺失**（如把 `.divider` 写成扁平 eyebrow+h1+pill，CSS 全不命中，h1 退回 default 巨号）—— 没溢出但格式已坏
+
+跑：
+
+```bash
+python3 assets/visual_check.py <source>-PPT.html
+# 有问题时加 --screenshots 把每页截图落到 <source>-PPT-check/ 肉眼过一遍
+python3 assets/visual_check.py <source>-PPT.html --screenshots
+# 线下上课常见 1440x900，线上直播 1280x720（默认）；按展示场景切
+python3 assets/visual_check.py <source>-PPT.html --viewport 1440x900
 ```
-⚠ slide 12 溢出 slogan 安全线 · 超出 1.8cqw · 最差元素: div.demo-steps · 建议走 C 拆页或 A 轮播
+
+脚本用 Playwright + headless Chromium 跑两遍：
+
+- **Pass 1 自然翻页**：模拟键盘 → 把整份 deck 走一遍，controller 内置的 `checkOverflow` 会在 console 报越线，脚本抓下来
+- **Pass 2 深测**：逐页强制激活 + 关掉动画（加 `.no-anim`）+ 把 `.stepped` 全部展开 + 每屏 `.windowed` 都量一次，比 Pass 1 更严（连右侧撑宽都抓）
+
+三类告警：
+
+1. **结构（missingStructure）** —— cover / divider / break / end / flow（含 flow-row）这 5 个版式的必备嵌套 selector 缺失，直接报"缺 .center / 缺 .flow .flow-row / 缺 [data-lit-step]"等具体项。`fix_options: ["rewrite_layout_from_reference"]` —— 照 `assets/layouts/*.html` 模板重写结构
+2. **溢出（bottomOverCqw / rightOverCqw）** —— 内容越过 slogan 安全线 / 右边界，用户看不到
+3. **稀疏（fill）** —— 内容挤在左上、大片白板空着、版式大概率选错。只在有 actionable 信号时报：
+   - `fsRatio` 异常小（h1 巨大 / 正文极小，字号失衡；仅 body 版式查）
+   - 3 条以上短段落（≤40 字）并列 + 内容高度占比 < 45% + 底部留白 > 35% —— 典型错用 `.body` 版堆 bullet，应换 `.points` 卡片版；已经是 points/flow/table/code 的 slide 自动跳过不误报
+   - 或极端稀疏：内容高度 < 30% + 底部留白 > 50%
+   - `cover / divider / break / end` 版式天然稀疏，直接跳过不报
+
+**脚本不自动改 HTML**——版式替换由上面的 skill 自修闭环（agent 层）完成，脚本只负责诊断 + 给 `fix_options`。`tweaks/` 对照流程降级为兜底，只在 skill 5 轮内收敛不了、标记 `manual_review` 的 slide 才调出来让用户挑。
+
+依赖 Playwright：
+
+```bash
+pip install playwright
+python3 -m playwright install chromium
 ```
 
-lint 干净后再开浏览器过一遍 console，双保险。
+#### 3. 肉眼验收
+
+浏览器开一次，翻完整份 deck。console 应干净，没有 `⚠` 告警；首页末页 slogan 条按预期隐藏；时间条显示合理。自检脚本 `--screenshots` 出来的图也可以直接翻。
+
+（具体告警对应什么操作，细则见上面"自改决策"表；迭代上限 / 死循环退出见"迭代上限 / 退出条件"段。本 skill 在一次用户请求内跑完闭环，不要把告警清单丢给用户让他自己改。）
 
 ## 后续改动走 tweak 对照
 
-装配后要改某页，不直接动 `<source>-PPT.html`：
+两种情形走 `tweaks/`：
+
+1. **自修闭环收敛不了的 slide（`manual_review`）**——skill 自己 5 轮内改不动、或改了反而引入新告警回退的那些页
+2. **交付后用户手动要改某页**（换色调 / 试排版 / 业务调整）
+
+流程：
 
 1. 在同目录 `tweaks/` 下新建 `tweak-<描述>.html`，把要改的 slide 拎出来做新旧两版
 2. 浏览器打开给用户看 before / after
@@ -236,6 +359,7 @@ lint 干净后再开浏览器过一遍 console，双保险。
 ## 参考文件
 
 - `assets/lint.py` — 装配后跑的静态密度 linter（无依赖，Python 3 stdlib）
+- `assets/visual_check.py` — 装配后跑的像素级自检（headless Chromium + Playwright），抓 lint 抓不到的越线 / 撑宽；可选 `--screenshots` 导出每页 PNG
 - `assets/skeleton.html` — 技术骨架（verbatim 拷入最终 deck）
 - `assets/layouts/index.html` — Layouts Gallery 入口，7 张 layout 缩略一览 + 锚点导航
 - `assets/layouts/<body|points|flow|table|cover|divider|break>.html` — 单版式 preview，可视化预览 + 顶部注释的数据形状 / 典型场景 / 关键机制 / 装配期注意（非装配模板，仅视觉参考）

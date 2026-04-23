@@ -91,6 +91,22 @@ Your Markdown should include:
 
 Fields are detected semantically — no fixed template. Missing any of the optional fields just disables the matching UI (not a hard error).
 
+## Post-assembly validation
+
+Two scripts close the loop so content doesn't silently spill off-screen:
+
+```bash
+# 1. Structural density lint — zero-dependency, fast
+python3 assets/lint.py <source>-PPT.html
+
+# 2. Pixel-level visual check — catches overflow lint can't see
+pip install playwright && python3 -m playwright install chromium   # one-time
+python3 assets/visual_check.py <source>-PPT.html
+python3 assets/visual_check.py <source>-PPT.html --screenshots     # dump PNG per slide
+```
+
+`lint.py` flags over-stuffed containers by structural count; `visual_check.py` boots headless Chromium, walks through every slide, captures the controller's console warnings, and runs a deeper probe that catches right-side overflow the natural-navigation pass misses. Both should exit clean before you ship.
+
 ## Design constraints (non-negotiable)
 
 | Aspect | Rule |
